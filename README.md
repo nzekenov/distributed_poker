@@ -9,6 +9,7 @@ Poker Online is network based, digital version of the popular card game - Poker.
 If you already have a network, and Dealer on the network, you can download Client code (client.py) and start playing Poker with your friends. If not, then you can set up own network and run Dealer's (dealer.py) code and configure it on your network so that anyone connect and play.
 
 Functionality:
+
 Dealer (Game Engine): 
 - Start Games if two or more people joined table (Will be several different tables with capacity of up to 9 people)
 - Mix card stack
@@ -31,7 +32,5 @@ Further improvements:
 
 Nurassyl Zekenov
 
-Carnegie Mellon University Qatar
-School of Computer Science
-Class of 2023
+
 
