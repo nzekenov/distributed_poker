@@ -27,6 +27,15 @@ Client:
 - Win/Loss
 - Chat with other people sitting the same table
 
+GUI description (You can watch cool video by this link: https://youtu.be/uxiS_aVHGbY):
+
+client.py:
+- Once client run client.py, logging in window will appear
+- If player sign in successfully, main menu will be shown
+- On main menu player can see list of tables with the number of people playing there
+- Player can choose a table and join by clicking a button "Join"
+
+
 Further improvements:
 - Adding types of game (Holdem/Omaha)
 - Automatical joining to the Game
