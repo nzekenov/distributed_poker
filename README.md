@@ -4,7 +4,7 @@ Welcome.
 
 Here will be my 15-112 project - Poker Online.
 
-Poker Online is network based version of the popular card game - Poker. Here, in GitHub repository, you will find two codes: Client (For Players) and Server (For Dealer). 
+Poker Online is network based, digital version of the popular card game - Poker. Here, in my GitHub repository, you will find two code files: Client (For Players) and Server (For Dealer). 
 
 If you already have a network, and Dealer on the network, you can download Client code (client.py) and start playing Poker with your friends. If not, then you can set up own network and run Dealer's (dealer.py) code and configure it on your network so that anyone connect and play.
 
@@ -28,4 +28,7 @@ Client:
 Further improvements:
 - Adding types of game (Holdem/Omaha)
 - Automatical joining to the Game
+
+Nurassyl Zekenov
+CMU-Q, SCS, Class of 2023
 
