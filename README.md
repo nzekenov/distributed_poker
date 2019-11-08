@@ -16,6 +16,7 @@ Dealer (Game Engine):
 - Share cards to each player
 - Open cards
 - Make an order of players
+- Determine combinations
 - Determine the winner
 - Give time for each client to move (if client takes more time than given, automatically consider as Fold)
 
@@ -29,6 +30,12 @@ Client:
 Further improvements:
 - Adding types of game (Holdem/Omaha)
 - Automatical joining to the Game
+- Multiplayer mode played on single computer
+
+Preliminary list of python libaries used for this project:
+- socket
+- pygame
+- Random
 
 Nurassyl Zekenov
 
