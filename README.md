@@ -30,5 +30,8 @@ Further improvements:
 - Automatical joining to the Game
 
 Nurassyl Zekenov
-CMU-Q, SCS, Class of 2023
+
+Carnegie Mellon University Qatar
+School of Computer Science
+Class of 2023
 
