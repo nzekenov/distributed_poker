@@ -187,21 +187,6 @@ def checkMail(s):
     message,number = getNumber(s)
     return number,message
 
-def getTables(s):
-    sendMessage(s,"nzekenov","/tables")
-    number, message = checkMail(s)
-    tables = []
-    if number > 0:
-        messages = getMail(s,message,number)
-        print(len(messages))
-        message = messages[0]
-        number = message.split("/")[1]
-        for i in range(number):
-            tables.append(message.split("/")[i*2+2],message.split("/")[i*2+1])
-    return tables
-
-
-
 
 #returns all inbox files and messages
 def getMail(s,message,number):
@@ -218,6 +203,7 @@ def getMail(s,message,number):
     #returns list received of messages and files
     return messages
 
+#window where user enters its login info
 class loginWnd():
     def __init__(self,root,socket):
         self.root = root
@@ -235,21 +221,22 @@ class loginWnd():
         self.box2.grid(row = 1, column = 1)
         self.btn1.grid(row = 2, column = 1)
     
-
+    
     def bp(self):
         #closes window if incorrect password/username entered
         while not login (self.socket, self.box1.get(), self.box2.get()):
-            #there should be a window like "UNSUCCESSFUL"
+            #there should be a window like "UNSUCCESSFUL" (IN FUTURE)
             self.root.destroy()
         #logs in
+        #opens next window where all tables are diplayed
         clogin = self.box1.get()
-        sendMessage(self.socket,"nzekenov","/play")
         self.root.destroy()
         self.root = tkinter.Tk()
         self.root.title("Poker Client")
         self.app = pokerWnd(self.root,socket,clogin)
         self.root.mainloop()
-        
+
+#window with all avaliable table
 class pokerWnd():
     def __init__(self,root,socket,mylogin):
         self.wnd = {}
@@ -257,120 +244,75 @@ class pokerWnd():
         self.socket = socket
         self.mylogin = mylogin
         self.mainFrame = tkinter.Frame(root)
+        #sends a message to dealer that he is playing
+        sendMessage(self.socket,"nzekenov","/play")
         self.mainFrame.grid(sticky = "wens")
         self.lbl1 = tkinter.Label(self.mainFrame, text = "All Tables")
-        self.listbox1_entries = getTables(self.socket)
+        #fills the listbox with currently available tables
+        self.listbox1_entries = self.getCommands()
         self.listbox1_widget = tkinter.Listbox(self.mainFrame)
         self.windows = {}
+        #button for joining a table
         self.btn1 = tkinter.Button(self.mainFrame, text = "Join Table",command = self.joinTable)
         for table in self.listbox1_entries:
             self.listbox1_widget.insert(tkinter.END, table)
         self.lbl1.grid(row = 0, column = 0)
         self.listbox1_widget.grid(row = 1, column = 0)
         self.btn1.grid(row = 2, column = 0)
-        self.mainFrame.after(7000,self.alarm)
+        self.mainFrame.after(5000,self.alarm)
         
+    #method of getting all commands
+    def getCommands(self):
+        sendMessage(self.socket,"nzekenov","/tables")
+        number, message = checkMail(self.socket)
+        tables = []
+        messages = getMail(self.socket,message,number)
+        print(messages)
+        for (u,m) in messages:
+            if m.split("/")[1] == "tables":
+                print(m)
+                for i in range(int(m.split("/")[2])):
+                    tables.append(m.split("/")[2+(i*2)+1])
+            elif m.split("/")[1] == "ok":
+                print(m)
+                if m.split("/")[2] == "jointable":
+                    print("Open new window")
+                    self.root.destroy()
+                    self.root = tkinter.Tk()
+                    self.root.title("Table")
+                    self.app = tableWnd(self.root,self.socket,self.mylogin)
+                    self.root.mainloop()
+        return tables
 
     def joinTable(self):
-        sendMessage(self.socket,"nzekenov","/join/"+
-
-
-
+        tableId = str(self.listbox1_widget.get(self.listbox1_widget.curselection()))
+        sendMessage(self.socket,"nzekenov","/join/"+tableId+"/0/500")
         
     def alarm(self):
         self.listbox1_widget.delete(0,'end')
-        self.listbox1_entries = getTables(self.socket)
+        self.listbox1_entries = self.getCommands()
         for user in self.listbox1_entries:
             self.listbox1_widget.insert(tkinter.END, user)
-        self.mainFrame.after(7000,self.alarm)
+        self.mainFrame.after(5000,self.alarm)
         
-"""   
-class chatWnd():      
-    def __init__(self,root,socket,friend,mylogin,message,file,windows,wnd):
+
+class tableWnd():      
+    def __init__(self,root,socket,mylogin):
         self.wnd = wnd
-        self.windows = windows
-        self.message = message
-        self.file = file
         self.socket = socket
         self.mylogin = mylogin
-        self.friend = friend
-        if windows[friend]==False:
-            self.mainFrame = tkinter.Frame(root)
-            self.mainFrame.grid()
-            self.txt1 = tkinter.Text(self.mainFrame)
-            self.txt2 = tkinter.Text(self.mainFrame, height = 20)
-            self.btn1 = tkinter.Button(self.mainFrame,text = "Send Message",command = self.sendMsg)
-            self.btn2 = tkinter.Button(self.mainFrame,text = "Send File",command = self.sendFileBtn)
-            self.txt1.config(height = 10)
-            self.txt2.config(height = 7)
-            self.btn1.config(height = 5)
-            self.btn2.config(height = 5, width = 20)
-            self.txt1.grid()
-            self.txt2.grid(row = 1, column = 0)
-            self.btn1.grid(row = 1, column = 1)
-            self.btn2.grid(row = 2)
-            self.txt1.config(state='disabled')
-            self.windows[friend] = True
-        self.mainFrame.after(1000, self.update)
+        self.mainFrame = tkinter.Frame(root)
+        self.mainFrame.grid(sticky = "wens")
+        self.lbl1 = tkinter.Label(self.mainFrame, text = "Table")
+        self.btn1 = tkinter.Button(self.mainFrame, text = "Check/Call")
+        self.btn2 = tkinter.Button(self.mainFrame, text = "Fold")
+        self.btn3 = tkinter.Button(self.mainFrame, text = "Bet/Raise")
+        self.btn1.grid()
+        self.btn2.grid()
+        self.btn3.grid()     
         
-    def sendMsg(self):
-        if sendMessage(self.socket, self.friend, self.txt2.get("1.0","end-1c")):
-            self.txt1.config(state='normal')
-            self.txt1.insert(tkinter.END, self.mylogin + ": " +self.txt2.get("1.0","end-1c") + "\n")
-            self.txt1.config(state='disabled')
-            self.txt2.delete("1.0",'end')
-        else:
-            self.txt1.config(state='normal')
-            self.txt1.insert(tkinter.END, "Error sending message to " + self.friend + ". Please try again. \n")
-            self.txt1.config(state='disabled')
-            self.txt2.delete("1.0",'end')
+       
 
-    #function that sends file when "Send File" button is pressed      
-    def sendFileBtn(self):
-        #choose file from documents(only current directory is available)
-        filename = askopenfilename()
-        filename = os.path.split(filename)[1]
-        if sendFile(self.socket,self.friend,filename):
-            self.txt1.config(state='normal')
-            self.txt1.insert(tkinter.END, self.mylogin + ": File " +filename + " sent successfully. \n")
-            self.txt1.config(state='disabled')
-        
-    def update(self):
-        for (user,m) in self.message:
-            if user == self.friend:
-                self.txt1.config(state='normal')
-                self.txt1.insert(tkinter.END, self.friend + ": " + m + "\n")
-                self.txt1.config(state='disabled')
-            else:
-                if self.windows[user]==False:
-                    self.wnd[user] = tkinter.Toplevel()
-                    app = chatWnd(self.wnd[user],self.socket,user,self.mylogin,self.message,self.file,self.windows,self.wnd)
-                    self.wnd[user].geometry("800x650")
-                    self.wnd[user].title("Chat with " + user)
-                    self.wnd[user].mainloop()
-                else:
-                    self.wnd[user].message = [(user,m)]+self.message[1:]
-                    print(self.wnd[user].message)
-                    self.wnd[user].update()
-    
-        self.message = self.message[1:]
-        for (user,f) in self.file:
-            if user == self.friend:
-                self.txt1.config(state='normal')
-                self.txt1.insert(tkinter.END, self.friend + ": Sent a file" + f + "\n")
-                self.txt1.config(state='disabled')
-            else:
-                if self.windows[user]==False:
-                    self.wnd[user] = tkinter.Toplevel()
-                    app = chatWnd(self.wnd[user],self.socket,user,self.mylogin,self.message,self.file,self.windows,self.wnd)
-                    self.wnd[user].geometry("800x650")
-                    self.wnd[user].title("Chat with " + user)
-                    self.wnd[user].mainloop()
-        self.file = self.file[1:]
-        number, messages = checkMail(self.socket)
-        self.message,self.file = getMail(self.socket,messages,number)
-        self.mainFrame.after(1000,self.update)
-"""
 socket = StartConnection("86.36.46.10", 15112)
 wnd = tkinter.Tk()
 wnd.title("Sign in")

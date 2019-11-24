@@ -212,7 +212,7 @@ class Card(object):
     #shows the card, if it is visible, otherwise "Card" (Backside)
     def __repr__(self):
         if self.visible == True:
-            return str(self.value + " of " + self.suit)
+            return "/" + str(self.value) + "/" + str(self.suit)
         return "Card"
 
 #RandomDeck
@@ -233,18 +233,25 @@ class RandomDeck(list):
 
 #tables' class
 class Table(object):
-    #initializes with user-defined seats and no-players
-    def __init__(self,seats):
+    #initializes with user-defined seats and no-players and id
+    def __init__(self,seats,id):
         self.seats = seats
         self.cards = []
+        self.id = id
         self.users = []
         self.inGame = False
         for i in range(seats):
             self.users.append(None)
-
+            
+    #show the number of empty places
     def __repr__(self):
-        return "A table of " + str(self.seats) + " people."
+        empty = 0
+        for i in self.users:
+            if i == None:
+                empty += 1
+        return "/"+str(empty)
 
+    #adds user to table's users
     def addUser(self,seat,player,chips):
         self.users[seat] = player,chips
         count = 0
@@ -259,10 +266,12 @@ class Table(object):
             self.inGame = True
             self.game = Game(currentPlayers,RandomDeck())
         elif count > 1 and self.inGame == True:
-            sendMessage(socket,player.username,"Wait for a new game")
+            sendMessage(socket,player.username,"/wait")
 
 
+#players' class
 class Player(object):
+    #initializes player with username,chips, and attributes for a game
     def __init__(self,username,chips):
         self.username = username
         self.chips = chips
@@ -273,58 +282,69 @@ class Player(object):
         self.rank = 0
         self.highest = 0
 
+    #gives a card from the deck of game
     def giveCard(self,number,deck):
         for i in range(number):
             self.cards.append(deck.getCard())
 
+    #adds user to specific table, seat and chosen amount of chips
     def joinTable(self,table,choice,chipsNumber):
+        #if everything done successfully, returns OK, otherwise, show the type of error
         if self.table==None:
             if table.users[choice] == None:
                 if chipsNumber <= self.chips:
                     table.addUser(choice,self,chipsNumber)
                     self.currentChips = chipsNumber
                     self.table = table
-                    sendMessage(socket,self.username,"Successfully reserved your seat")
+                    sendMessage(socket,self.username,"/ok/joinTable")
                 else:
-                    sendMessage(socket,self.username,"Sorry, you have only "+ str(self.chips)+ " chips")
+                    sendMessage(socket,self.username,"/no/chips/"+ str(self.chips))
             else:
-                sendMessage(socket,self.username,"Sorry, this seat is reserved, choose other place.")
+                sendMessage(socket,self.username,"/no/reserved")
         else:
-            sendMessage(socket,self.username,"You are already sitting on " + self.table)
+            sendMessage(socket,self.username,"/no/already")
 
+    #remove user from the table
     def leaveTable(self):
         if self.table!=None:
             table = self.table
             for i in table.users:
                 if i == self.username:
                     table.users[i] = None
-            sendMessage(socket,self.username,"You escaped the table.")
+            sendMessage(socket,self.username,"/ok")
             self.table = None
         else:
-            sendMessage(socket,self.username,"You are not sitting.")
+            sendMessage(socket,self.username,"/no/wasnt")
 
-
+#create a new table
 def createTable():
-    tables.append(Table(5))
+    id = len(tables)
+    tables.append(Table(5,id))
 
+#sequence checker
 def checkForSequence(a):
     print(a)
+    #if non-consecutive numbers identified, returns False
     for i in range(4):
         if a[i]+1 != a[i+1]:
             return False
     return True
 
+#games' class
 class Game(object):
     def __init__(self,players,cards):
+        #game is initialized with players,randomdeck
         deck = RandomDeck()
         self.bank = 0
         self.center = []
         self.turn = 1
         self.isBetting = False
         self.betted = []
+        #get 5 random cards from the deck
         for i in range(5):
             self.center.append(deck.getCard())
         self.players = []
+        #give each player 2 cards and send them in messages
         for player in players:
             player.giveCard(2,cards)
             player.gaveAmount = 0
@@ -333,13 +353,17 @@ class Game(object):
             myCards = player.cards
             for i in range(len(myCards)):
                 myCards[i].visible = True
-            cardString = str(myCards[0])+" and "+str(myCards[1])
-            sendMessage(socket,player.username,"Your cards are " + cardString)
+            cardString = str(myCards[0])+str(myCards[1])
+            sendMessage(socket,player.username,"/cards/your" + cardString)
+        #start a game from the first person
         self.i = 0
         self.giveChoice(self.players[self.i])
         self.currentMover = self.players[self.i].username
 
+    #flush combination in poker identify if 5 or more cards are of same suit
+    #if yes, return the highest card of the suit and True
     def isFlush(self,playerCards):
+        #counts number of cards for each suit
         counter = {}
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
         for card in playerCards:
@@ -348,12 +372,14 @@ class Game(object):
             else:
                 counter[card.suit] += 1
         cards = []
+        #if suit have more than 4 cards, adds all cards of the suit to the list
         for theSuit in counter:
             if counter[theSuit]>4:
                 cards = []
                 for value in playerCards:
                     if card.suit == theSuit:
                         cards.append(card.value)
+        #find the maximum card and return the result
         if len(cards)>4:
             if len(cards)==5:
                 return [True,cards[0]]
@@ -365,20 +391,24 @@ class Game(object):
 
 
 
-                
+    #checks for street combination (5 consecutive cards (e.g 2,3,4,5,6) in the table)           
     def isStreet(self,playerCards):
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
         uniqueCards = []
+        #gets all unique cards
         for card in playerCards:
             if values[card.value] not in uniqueCards:
                 uniqueCards.append(values[card.value])
                 if card.value == "Ace":
                     uniqueCards.append(1)
         print(uniqueCards)
+        #puts cards in order
         uniqueCards.sort()
+        #if the length of the new list is less than 5, return False
         if len(uniqueCards) < 5:
             return False
         street = []
+        #checks for the sequences in each of the subsets if 5 values
         for i in range(len(uniqueCards)-4):
             if checkForSequence(uniqueCards[i:i+5]) == True:
                 street.append(uniqueCards[i+4])
@@ -390,8 +420,9 @@ class Game(object):
         return [False]
 
 
-
+    #checks for pairs in cards on table
     def isPair(self,playerCards):
+        #count number of each card value
         counter = {}
         for card in playerCards:
             if card.value not in counter:
@@ -400,9 +431,12 @@ class Game(object):
                 counter[card.value] += 1
         pairs = []
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
+        #if value appeared twice, add to pairs' list
         for value in counter:
             if counter[value] == 2:
                 pairs.append(values[value])
+        #find highest pair
+        #find highest two pairs
         if len(pairs)>0:
             if len(pairs)==1:
                 return [True,1,pairs[0]]
@@ -410,51 +444,62 @@ class Game(object):
                 return [True,2,pairs[-1],pairs[-2]]
         return [False]
                 
-
+    #checks for the combination of three of the same values
     def isThree(self,playerCards):
         counter = {}
+        #counts apperance of each card value
         for card in playerCards:
             if card.value not in counter:
                 counter[card.value] = 1
             else:
                 counter[card.value] += 1
         three = []
+        #checks for values appeared three times in stack
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
         for value in counter:
             if counter[value] == 3:
                 three.append(values[value])
+        #returns highest value of appeared triple times card
         if len(three)>0:
             a = max(three)
             return [True,a]
         return [False]
-        
+
+    #checks for the combination of four of the same values
     def isFour(self,playerCards):
         counter = {}
+        #counts apperance of each card value
         for card in playerCards:
             if card.value not in counter:
                 counter[card.value] = 1
             else:
                 counter[card.value] += 1
+         #checks for values appeared four times in stack
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
         for value in counter:
+            #returns value of appeared four times card
             if counter[value] == 4:
                 return [True,values[value]]
         return [False]
 
+    #returns highest card value in the stack
     def highest(self,allCards):
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
         uniqueCards = []
         for card in allCards:
             if values[card.value] not in uniqueCards:
                 uniqueCards.append(values[card.value])
+        #find the unique cards, and return highest among them
         return uniqueCards[-1]
 
-
+    #method for identifying a winner
     def checkWinner(self):
+        #if one player left, he is winner
         if len(self.players)==1:
             self.players[0].chipsNumber += self.bank
             self.players[0].currentChips += self.bank
         else:
+        #otherwise, check for combinations of each player and make ranknings
             rankings = []
             for player in self.players:
                 player.highest = 0
@@ -464,34 +509,43 @@ class Game(object):
                 values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
                 allCards = sorted(allCards, key=lambda x: values[x.value])
                 print(allCards)
+                #Royal FLUSH or Street Flush Combination (Highest 5/ Any 5 consecutive cards of the same suit)
                 if self.isFlush(allCards)[0] and self.isStreet(allCards)[0]:
                     if self.isStreet(allCards)[1]==14:
                         player.rank = 10
                     player.rank = 9
                     player.highest = self.isStreet(allCards)[1]
+                #four of same values
                 elif self.isFour(allCards):
                     player.rank = 8
+                #Full House (3 & 2 same valued cards)
                 elif self.isThree(allCards)[0] and self.isPair(allCards)[0] and (self.isThree(allCards)[1]!=self.isPair(allCards)[1] or self.isThree(allCards)[1]!=self.isPair(allCards)[2]):
                     player.rank = 7
                     if self.isThree(allCards)[1]>self.isPair(allCards)[1]:
                         player.highest = self.isThree(allCards)[1]
                     else:
                         player.highest = self.isPair(allCards)[1]
+                #Flush (>4 cards of the same suit)
                 elif self.isFlush(allCards)[0]:
                     player.rank = 6
                     player.highest = self.isFlush(allCards)[1]
+                #Street (>4 cards consecutive)
                 elif self.isStreet(allCards)[0]:
                     player.rank = 5
                     player.highest = self.isStreet(allCards)[1]
+                #Three of same values 
                 elif self.isThree(allCards)[0]:
                     player.rank = 4
                     player.highest = self.isThree(allCards)[1]
+                #Two pairs of cards
                 elif self.isPair(allCards) and len(self.isPair(allCards))==3:
                     player.rank = 3
                     player.highest = self.isPair(allCards)[1]
+                #One pair
                 elif self.isPair(allCards):
                     player.rank = 2
                     player.highest = self.isPair(allCards)[1]
+                #highest card
                 else:
                     player.rank = 1
                     player.highest = self.highest(allCards)
@@ -508,6 +562,7 @@ class Game(object):
             print(highest_rank + "IS HIGHEST RANK")
             count = 0
             cards = [(card,username)]
+            #identify users with highest rank
             if len(rankings)>1:
                 for (r,c,u) in rankings[1:]:
                     if highest_rank==r:
@@ -515,10 +570,12 @@ class Game(object):
             cards.sort(key=lambda tup:tup[0])
             highest_card,username = cards[0]
             winners = [username]
+            #identify users with highest card in the rank
             if len(cards)>1:
                 for (c,u) in cards[1:]:
                     if highest_card==c:
                         winners.append(u)
+            #those users are winners
             print(winners)
             number = len(winners)
             for gamer in self.players:
@@ -529,21 +586,29 @@ class Game(object):
 
 
 
-
+    #send message with a choice
     def giveChoice(self,player):
-        sendMessage(socket,player.username,"Choose to Check/Fold/Bet/Call/Raise")
+        sendMessage(socket,player.username,"/move")
 
+    #if player is checking or calling
     def check(self,player):
+        #identify whether he can check or call
         if self.isBetting == False:
+            #if he can check, next person should move
             for gamer in self.players:
                 sendMessage(socket,gamer.username,str(player) + " have checked")
             self.i += 1
+            #check if number of users is more than 1
             if len(self.players) == 1:
+                #if not, he won
                 self.checkWinner()
+            #check if he is the last person in the queve
             elif self.i != len(self.players):
+                #if not, then next person moves
                 self.giveChoice(self.players[self.i])
                 self.currentMover = self.players[self.i].username
             elif self.turn != 4:
+                #if it is the end of current turn show central cards
                 for gamer in self.players:
                     sendMessage(socket,gamer.username,"Central cards are: ")
                     if self.turn == 1:
@@ -556,6 +621,7 @@ class Game(object):
                     else:
                         self.center[self.turn+1].visible = True
                         sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                #increment the turns' number and start moving the first player
                 self.turn += 1
                 self.i = 0
                 self.giveChoice(self.players[self.i])
@@ -563,10 +629,13 @@ class Game(object):
             else:
                 self.checkWinner()
         else:
+            #if the turn is betting
+            #user calls the betted amount, but if it is more, gives all his chips, not more
             if playerlist[player].currentChips < self.betAmount:
                 amount = playerlist[player].currentChips
             else:
                 amount = self.betAmount
+            #amount will be added to table's bank, and removed from player's bank
             playerlist[player].currentChips -= amount
             playerlist[player].chips -= amount
             playerlist[player].gaveAmount += amount
@@ -609,12 +678,18 @@ class Game(object):
         print(self.bank)
 
     def bet(self,player,amount):
+        #identify whether it is betting or raising
+        #if betting
         if self.isBetting == False:
+            #check if user have enough chips to bet
             if amount <= playerlist[player].currentChips:
+                #if yes, table is currently betting
                 self.isBetting = True
+                #betAmount is equal to number of chips given by player
                 self.betAmount = amount
                 for gamer in self.players:
                     sendMessage(socket,gamer.username,str(player) + " have bet" + str(amount))
+                #add the amount to table's bank and remove from player's bank
                 playerlist[player].currentChips -= amount
                 playerlist[player].chips -= amount
                 playerlist[player].gaveAmount += amount
@@ -770,7 +845,7 @@ class startWnd():
         self.mainFrame.pack()
         self.mainFrame.after(500,self.update)
 
-    #This should automatically create tables by checking every second(OOP side)
+    #This should automatically create tables by checking every second(OOP side) and get commands from players
     def update(self):
         receiveCommands(socket)
         if len(players)-1 != len(tables) and len(players) != 0:
@@ -784,26 +859,25 @@ class startWnd():
 def userJoined(s,u,playerlist,players):
     print(players,playerlist)
     if u in players:
-        sendMessage(s,u,"You are already registered, " + u + " . \n Now you have " + str(playerlist[u].chips) + " poker chips.")
+        sendMessage(s,u,"/back/" + u + "/" + str(playerlist[u].chips))
     else:
-        print("wants to join")
         players.append(u)
         playerlist[u] = Player(u,50000)
-        print(players,playerlist)
-        if sendMessage(s,u,"Welcome in our hidden casino, " + u + " \nFor joining, we are giving you "+ str(playerlist[u].chips) + " poker chips. \nIf you want more, buy offline from nzekenov with price: 500 chips for 100 riyals."):
-            print("Sent message")
+        if sendMessage(s,u,"/welcome/" + u + "/"+ str(playerlist[u].chips)):
+            print("Sent message to " + u)
 
 #this returns client the list of tables
 def returnTables(tableList,u):
-    message = "/"+str(len(tableList))
+    message = "/tables/"+str(len(tableList))
     for i in range(len(tableList)):
-        message += "/" + str(i)+"/"+str(tableList[i])
+        message += "/" + str(i)+str(tableList[i])
     sendMessage(socket,u,message)
 
-#this function should update every second and check for new messages from users
+#this function should update every second and check for new requests from users
 def receiveCommands(s):
     (Messages, Files) = getMail(s)
     print(Messages)
+    #depending on the request from user, returns the result (SUCCESS/FAIL) or does a function
     if Messages != []:
         for (u, m) in Messages:
             if m != " ":
@@ -812,25 +886,28 @@ def receiveCommands(s):
                 if command[0] == "":
                     print(command[1])
                     if command[1] == "play":
-                        print(u + " Wants to play")
                         userJoined(s,u,playerlist,players)
                     elif command[1] == "tables":
+                        #returns the list of tables in format "/tables/numberOfTables/tableId"
                         if u in players:
                             returnTables(tables,u)
                         else:
-                            sendMessage(s,u,"You are not registered in game, please send '/play' to register")
+                            sendMessage(s,u,"/no/register")
+                        #adds player to the chosen table,seat with chosen amount of chips
                     elif command[1] == "join":
                         if u in players:
                             playerlist[u].joinTable(tables[int(command[2])],int(command[3]),int(command[4]))
                             print(tables[int(command[2])].users)
                         else:
-                            sendMessage(s,u,"You are not registered in game, please send '/play' to register")
+                            sendMessage(s,u,"/no/register")
+                        #user leave the table
                     elif command[1] == "leave":
                         if u in players:
                             if playerlist[u].table != None:
                                 playerlist[u].leaveTable()
                         else:
-                            sendMessage(s,u,"You are not registered in game, please send '/play' to register")
+                            sendMessage(s,u,"/no/register")
+                        #user wants to skip his step
                     elif command[1] == "check":
                         if u in players:
                             if playerlist[u].table != None:
@@ -840,15 +917,16 @@ def receiveCommands(s):
                                             #should check whether his step
                                             playerlist[u].table.game.check(u)
                                         else:
-                                            sendMessage(s,u,"It is not your turn")
+                                            sendMessage(s,u,"/no/wait")
                                     else:
-                                        sendMessage(s,u,"You are not currently playing")
+                                        sendMessage(s,u,"/no/notplaying")
                                 else:
-                                    sendMessage(s,u,"Your table is not currently playing")
+                                    sendMessage(s,u,"/no/gamewait")
                             else:
-                                sendMessage(s,u,"You have to sit on table to play")
+                                sendMessage(s,u,"/no/join")
                         else:
-                            sendMessage(s,u,"You are not registered in game, please send '/play' to register")
+                            sendMessage(s,u,"/no/register")
+                        #user wants to increase the bet amount
                     elif command[1] == "bet":
                         if u in players:
                             if playerlist[u].table != None:
@@ -858,43 +936,48 @@ def receiveCommands(s):
                                             #should check whether his step
                                             playerlist[u].table.game.bet(u,int(command[2]))
                                         else:
-                                            sendMessage(s,u,"It is not your turn")
+                                            sendMessage(s,u,"/no/wait")
                                     else:
-                                        sendMessage(s,u,"You are not currently playing")
+                                        sendMessage(s,u,"/no/notplaying")
                                 else:
-                                    sendMessage(s,u,"Your table is not currently playing")
+                                    sendMessage(s,u,"/no/gamewait")
                             else:
-                                sendMessage(s,u,"You have to sit on table to play")
+                                sendMessage(s,u,"/no/join")
                         else:
-                            sendMessage(s,u,"You are not registered in game, please send '/play' to register")
+                            sendMessage(s,u,"/no/register")
+                        #user wants to fall his cards
                     elif command[1] == "fold":
                         if u in players:
+                            #check if user is among players
                             if playerlist[u].table != None:
+                                #check if user player joined any tables
                                 if playerlist[u].table.inGame == True:
+                                    #check whether table is playing now
                                     if playerlist[u] in playerlist[u].table.game.players:
+                                        #should check whether user is among players
                                         if u == playerlist[u].table.game.currentMover:
                                             #should check whether his step
                                             playerlist[u].table.game.fold(u)
                                         else:
-                                            sendMessage(s,u,"It is not your turn")
+                                            sendMessage(s,u,"/no/wait")
                                     else:
-                                        sendMessage(s,u,"You are not currently playing")
+                                        sendMessage(s,u,"/no/notplaying")
                                 else:
-                                    sendMessage(s,u,"Your table is not currently playing")
+                                    sendMessage(s,u,"/no/gamewait")
                             else:
-                                sendMessage(s,u,"You have to sit on table to play")
+                                sendMessage(s,u,"/no/join")
                         else:
-                            sendMessage(s,u,"You are not registered in game, please send '/play' to register")
+                            sendMessage(s,u,"/no/register")
+                    #otherwise return undefined error
                     else:
-                        sendMessage(s,u,"Undefined command")
+                        sendMessage(s,u,"/no/undefined")
 
 
 
 
 socket = StartConnection("86.36.46.10", 15112)
 while not login (socket, "nzekenov", "nzekenov"):
-    print ("Something went wrong, but it's not ur fault")
-print("Your program is setted up")
+    print ("Something went wrong, launch the program again")
 players = []
 playerlist = {}
 tables = []
