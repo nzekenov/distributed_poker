@@ -242,7 +242,7 @@ class Table(object):
         self.inGame = False
         for i in range(seats):
             self.users.append(None)
-            
+
     #show the number of empty places
     def __repr__(self):
         empty = 0
@@ -252,8 +252,12 @@ class Table(object):
         return "/"+str(empty)
 
     #adds user to table's users
-    def addUser(self,seat,player,chips):
-        self.users[seat] = player,chips
+    def addUser(self,player,chips):
+        i = 0
+        while self.users[i]!=None:
+            i+=1
+        self.users[i] = player,chips
+        print(self.users)
         count = 0
         currentPlayers = []
         for i in range(len(self.users)):
@@ -288,21 +292,25 @@ class Player(object):
             self.cards.append(deck.getCard())
 
     #adds user to specific table, seat and chosen amount of chips
-    def joinTable(self,table,choice,chipsNumber):
+    def joinTable(self,table,chipsNumber):
         #if everything done successfully, returns OK, otherwise, show the type of error
         if self.table==None:
-            if table.users[choice] == None:
-                if chipsNumber <= self.chips:
-                    table.addUser(choice,self,chipsNumber)
+            if chipsNumber <= self.chips:
+                counter = 0
+                for user in self.users:
+                    if user != None:
+                        counter += 1
+                if counter <5:
+                    table.addUser(self,chipsNumber)
                     self.currentChips = chipsNumber
                     self.table = table
                     sendMessage(socket,self.username,"/ok/joinTable")
                 else:
-                    sendMessage(socket,self.username,"/no/chips/"+ str(self.chips))
+                    sendMessage(socket,self.username,"/no/full")
             else:
-                sendMessage(socket,self.username,"/no/reserved")
+                sendMessage(socket,self.username,"/no/chips/"+ str(self.chips))
         else:
-            sendMessage(socket,self.username,"/no/already")
+            sendMessage(socket,self.username,"/no/already_othertable")
 
     #remove user from the table
     def leaveTable(self):
@@ -386,12 +394,12 @@ class Game(object):
             elif len(cards)>5:
                 return [True,cards[-1]]
         return [False]
-                        
-        
 
 
 
-    #checks for street combination (5 consecutive cards (e.g 2,3,4,5,6) in the table)           
+
+
+    #checks for street combination (5 consecutive cards (e.g 2,3,4,5,6) in the table)
     def isStreet(self,playerCards):
         values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
         uniqueCards = []
@@ -443,7 +451,7 @@ class Game(object):
             elif len(pairs)>1:
                 return [True,2,pairs[-1],pairs[-2]]
         return [False]
-                
+
     #checks for the combination of three of the same values
     def isThree(self,playerCards):
         counter = {}
@@ -533,7 +541,7 @@ class Game(object):
                 elif self.isStreet(allCards)[0]:
                     player.rank = 5
                     player.highest = self.isStreet(allCards)[1]
-                #Three of same values 
+                #Three of same values
                 elif self.isThree(allCards)[0]:
                     player.rank = 4
                     player.highest = self.isThree(allCards)[1]
@@ -581,8 +589,8 @@ class Game(object):
             for gamer in self.players:
                 if gamer.username in winners:
                     sendMessage(socket,gamer.username,"You won")
-            
-            
+
+
 
 
 
@@ -896,7 +904,7 @@ def receiveCommands(s):
                         #adds player to the chosen table,seat with chosen amount of chips
                     elif command[1] == "join":
                         if u in players:
-                            playerlist[u].joinTable(tables[int(command[2])],int(command[3]),int(command[4]))
+                            playerlist[u].joinTable(tables[int(command[2])],int(command[2]))
                             print(tables[int(command[2])].users)
                         else:
                             sendMessage(s,u,"/no/register")
