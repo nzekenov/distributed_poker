@@ -239,6 +239,11 @@ class loginWnd():
         self.app = pokerWnd(self.root,socket,clogin)
         self.root.mainloop()
 
+#CLASS Player
+
+#CLASS Table
+
+
 #window with all avaliable table
 class pokerWnd():
     def __init__(self,root,socket,mylogin):
@@ -279,13 +284,14 @@ class pokerWnd():
             elif m.split("/")[1] == "ok":
                 print(m)
                 print(m.split("/")[2])
-                if m.split("/")[2] == "jointable":
+                if m.split("/")[2] == "joinTable":
+                    print("HEY")
                     print("Open new window")
                     self.root.destroy()
-                    wnd = tkinter.Tk()
-                    wnd.title("Table")
-                    app = tableWnd(wnd,self.socket,self.mylogin)
-                    wnd.mainloop()
+                    self.root = tkinter.Tk()
+                    self.root.title("Table")
+                    app = tableWnd(self.root,self.socket,self.mylogin)
+                    self.root.mainloop()
         return tables
 
     def joinTable(self):
@@ -304,7 +310,7 @@ class pokerWnd():
 
 class tableWnd():
     def __init__(self,root,socket,mylogin):
-        #self.players = players
+        self.players = []
         self.wnd = wnd
         self.socket = socket
         self.mylogin = mylogin
@@ -312,6 +318,7 @@ class tableWnd():
         self.mainFrame.grid()
         self.canvas = tkinter.Canvas(self.mainFrame,width = 600, height = 416)
         self.canvas.grid()
+        sendMessage(self.socket,"nzekenov","/players")
         image = PIL.ImageTk.PhotoImage(PIL.Image.open("images/63.gif").resize((600, 416), PIL.Image.ANTIALIAS))
         self.canvas.background = image
         self.bg = self.canvas.create_image(0,0,anchor=tkinter.NW,image=image)
@@ -380,6 +387,11 @@ class tableWnd():
 
     def fold(self):
         sendMessage(self.socket,"nzekenov","/fold")
+
+    def update(self):
+        number, message = checkMail(self.socket)
+        messages = getMail(self.socket,message,number)
+        print(messages)
 
 socket = StartConnection("86.36.46.10", 15112)
 wnd = tkinter.Tk()

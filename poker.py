@@ -297,7 +297,7 @@ class Player(object):
         if self.table==None:
             if chipsNumber <= self.chips:
                 counter = 0
-                for user in self.users:
+                for user in table.users:
                     if user != None:
                         counter += 1
                 if counter <5:
@@ -324,6 +324,17 @@ class Player(object):
         else:
             sendMessage(socket,self.username,"/no/wasnt")
 
+    def sendPlayers(self):
+        if self.table!=None:
+            table = self.table
+            users = []
+            for i in table.users:
+                if i!= None:
+                    users.append(i)
+            message = users.join("/")
+            sendMessage(socket,self.username,"/players/"+str(len(users))+"/"+message)
+        else:
+            sendMessage(socket,self.username,"/no/not_sitting")
 #create a new table
 def createTable():
     id = len(tables)
@@ -447,9 +458,9 @@ class Game(object):
         #find highest two pairs
         if len(pairs)>0:
             if len(pairs)==1:
-                return [True,1,pairs[0]]
+                return [True,pairs[-1]]
             elif len(pairs)>1:
-                return [True,2,pairs[-1],pairs[-2]]
+                return [True,pairs[-1],pairs[-2]]
         return [False]
 
     #checks for the combination of three of the same values
@@ -504,8 +515,7 @@ class Game(object):
     def checkWinner(self):
         #if one player left, he is winner
         if len(self.players)==1:
-            self.players[0].chipsNumber += self.bank
-            self.players[0].currentChips += self.bank
+            winners = [self.players[0].username]
         else:
         #otherwise, check for combinations of each player and make ranknings
             rankings = []
@@ -524,8 +534,9 @@ class Game(object):
                     player.rank = 9
                     player.highest = self.isStreet(allCards)[1]
                 #four of same values
-                elif self.isFour(allCards):
+                elif self.isFour(allCards)[0]:
                     player.rank = 8
+                    player.highest = self.isFour(allCards)[1]
                 #Full House (3 & 2 same valued cards)
                 elif self.isThree(allCards)[0] and self.isPair(allCards)[0] and (self.isThree(allCards)[1]!=self.isPair(allCards)[1] or self.isThree(allCards)[1]!=self.isPair(allCards)[2]):
                     player.rank = 7
@@ -546,7 +557,7 @@ class Game(object):
                     player.rank = 4
                     player.highest = self.isThree(allCards)[1]
                 #Two pairs of cards
-                elif self.isPair(allCards) and len(self.isPair(allCards))==3:
+                elif self.isPair(allCards)[0] and len(self.isPair(allCards))==3:
                     player.rank = 3
                     player.highest = self.isPair(allCards)[1]
                 #One pair
@@ -557,17 +568,13 @@ class Game(object):
                 else:
                     player.rank = 1
                     player.highest = self.highest(allCards)
+                print(player.rank)
+                print(player.highest)
                 rankings.append((player.rank,player.highest,player.username))
-                print(self.isFlush(allCards)[0])
-                print(self.isStreet(allCards)[0])
-                print(self.isPair(allCards)[0])
-                print(self.isThree(allCards)[0])
-                print(self.isFour(allCards)[0])
-                print(self.isPair(allCards)[0] and self.isThree(allCards)[0])
-                print(self.highest(allCards))
             rankings.sort(key=lambda tup:tup[0])
             highest_rank,card,username = rankings[0]
-            print(highest_rank + "IS HIGHEST RANK")
+            print(rankings)
+            print(str(highest_rank) + "IS HIGHEST RANK")
             count = 0
             cards = [(card,username)]
             #identify users with highest rank
@@ -575,6 +582,7 @@ class Game(object):
                 for (r,c,u) in rankings[1:]:
                     if highest_rank==r:
                         cards.append((c,u))
+            print(cards)
             cards.sort(key=lambda tup:tup[0])
             highest_card,username = cards[0]
             winners = [username]
@@ -584,12 +592,11 @@ class Game(object):
                     if highest_card==c:
                         winners.append(u)
             #those users are winners
-            print(winners)
-            number = len(winners)
-            for gamer in self.players:
-                if gamer.username in winners:
-                    sendMessage(socket,gamer.username,"You won")
-
+        print(winners)
+        number = len(winners)
+        for gamer in self.players:
+            if gamer.username in winners:
+                sendMessage(socket,gamer.username,"/won")
 
 
 
