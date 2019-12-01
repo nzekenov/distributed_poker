@@ -266,67 +266,72 @@ class pokerWnd():
         self.mainFrame.grid(sticky = "wens")
         self.lbl1 = tkinter.Label(self.mainFrame, text = "All Tables")
         #fills the listbox with currently available tables
-        self.listbox1_entries = []
         sendMessage(self.socket,"dealer","/tables")
-        self.mainFrame.after(4000,self.getTables)
         self.listbox1_widget = tkinter.Listbox(self.mainFrame)
+        self.mainFrame.after(2000,self.getTables)
         #button for opening a chosen table
-        self.btn1 = tkinter.Button(self.mainFrame, text = "Open Table",command = self.joinTable)
-        for table in self.listbox1_entries:
-            self.listbox1_widget.insert(tkinter.END, table)
+        self.btn1 = tkinter.Button(self.mainFrame, text = "Open Table",command = lambda: self.joinTable(str(self.listbox1_widget.get(self.listbox1_widget.curselection()))))
         self.lbl1.grid(row = 0, column = 0)
         self.listbox1_widget.grid(row = 1, column = 0)
         self.btn1.grid(row = 2, column = 0)
         self.getCommands()
-        self.mainFrame.after(5000,self.alarm)
+        self.mainFrame.after(100,self.alarm)
 
     def getTables(self):
         number, message = checkMail(self.socket)
+        self.listbox1_entries = []
+        self.listbox1_widget.delete(0,'end')
         tables = []
         i = 0
         messages = getMail(self.socket,message,number)
         while i <= number and messages[i].split("/")[1]!="tables":
             i+=1
+        print(messages[i]+" HAHAHAHAAHHA")
         for j in range(int(messages[i].split("/")[2])):
             tables.append(messages[i].split("/")[2+(j*2)+1])
         print(tables)
+        print("ARE TABLES")
         self.listbox1_entries += tables
+        print(self.listbox1_entries)
+        print("SHOULD BE ADDED")
+        for table in self.listbox1_entries:
+            self.listbox1_widget.insert(tkinter.END, table)
         if i < number:
-            self.leftmsg = messages[i:]
-            print(messages[i:])
+            self.leftmsg = messages[i+1:]
+            print(messages[i+1:])
+            print("SENT TO NEXT")
 
     #method of getting all commands
     def getCommands(self):
-        number, message = checkMail(self.socket)
-        messages = getMail(self.socket,message,number)
-        messages += self.leftmsg
-        for m in messages:
-            if m.split("/")[1] == "ok":
-                print(m)
-                print(m.split("/")[2])
-                if m.split("/")[2] == "joinTable":
+        messages = self.leftmsg
+        print(messages)
+        print("ARE FREAKING MESSSAGES")
+        for i in range(len(messages)):
+            if messages[i].split("/")[1] == "ok":
+                print(messages[i])
+                print(messages[i].split("/")[2])
+                if messages[i].split("/")[2] == "joinTable":
+                    print("GOODBYE")
+                    print(messages[i+1:])
                     #sendMessage(self.socket,"dealer","/players")
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
-                    app = tableWnd(self.root,self.socket,self.mylogin,messages)
+                    app = tableWnd(self.root,self.socket,self.mylogin,messages[i+1:])
                     self.root.mainloop()
 
 
 
-    def joinTable(self):
-        tableId = str(self.listbox1_widget.get(self.listbox1_widget.curselection()))
+    def joinTable(self,tableId):
         answer = simpledialog.askstring("Input", "How many chips to use?",parent=self.mainFrame)
         print(answer)
         sendMessage(self.socket,"dealer","/join/"+tableId+"/"+answer)
 
     def alarm(self):
         sendMessage(self.socket,"dealer","/tables")
-        self.mainFrame.after(4000,self.getTables)
-        self.listbox1_widget = tkinter.Listbox(self.mainFrame)
-        for user in self.listbox1_entries:
-            self.listbox1_widget.insert(tkinter.END, user)
+        self.mainFrame.after(2000,self.getTables)
         self.getCommands()
+        self.leftmsg = []
         self.mainFrame.after(5000,self.alarm)
 
 def rotate(l,n):
@@ -335,10 +340,13 @@ def rotate(l,n):
 class tableWnd():
     def __init__(self,root,socket,mylogin,messages):
         self.players = []
+        self.players1 = []
         self.wnd = wnd
         self.socket = socket
         self.mylogin = mylogin
         self.messages = messages
+        self.center = 0
+        print(self.messages)
         self.mainFrame = tkinter.Frame(root)
         self.mainFrame.grid()
         self.canvas = tkinter.Canvas(self.mainFrame,width = 600, height = 416)
@@ -348,6 +356,16 @@ class tableWnd():
         self.bg = self.canvas.create_image(0,0,anchor=tkinter.NW,image=image)
         self.btn4 = tkinter.Button(self.canvas, text = "Leave Table", command = self.leave)
         button4 = self.canvas.create_window(450,20, anchor=tkinter.NW, window = self.btn4)
+        self.lbl1 = tkinter.Label(self.mainFrame,text="None")
+        playername= self.canvas.create_window(40, 50, anchor=tkinter.NW, window=self.lbl1)
+        self.lbl2 = tkinter.Label(self.mainFrame,text="None")
+        playername = self.canvas.create_window(50, 280, anchor=tkinter.NW, window=self.lbl2)
+        self.lbl3 = tkinter.Label(self.mainFrame,text="None")
+        playername = self.canvas.create_window(270, 330, anchor=tkinter.NW, window=self.lbl3)
+        self.lbl4 = tkinter.Label(self.mainFrame,text="None")
+        playername = self.canvas.create_window(490, 280, anchor=tkinter.NW, window=self.lbl4)
+        self.lbl5 = tkinter.Label(self.mainFrame,text="None")
+        playername = self.canvas.create_window(500, 50, anchor=tkinter.NW, window=self.lbl5)
         #self.btn1 = tkinter.Button(self.canvas, text = "Check/Call",command = self.check)
         #button1 = self.canvas.create_window(265, 300, anchor=tkinter.NW, window=self.btn1)
         #self.btn2 = tkinter.Button(self.mainFrame, text = "Fold",command = self.fold)
@@ -367,9 +385,6 @@ class tableWnd():
         #cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_back)
         #card_back = card_back.resize((25, 40), PIL.Image.ANTIALIAS)
         #self.card_back1 = PIL.ImageTk.PhotoImage(card_back)
-        #my cards
-        #cardimage = self.canvas.create_image(270, 240, anchor=tkinter.NW, image=self.card_back1)
-        #cardimage = self.canvas.create_image(300, 240, anchor=tkinter.NW, image=self.card_back1)
         #1 cards
         #cardimage = self.canvas.create_image(100, 100, anchor=tkinter.NW, image=self.card_back1)
         #cardimage = self.canvas.create_image(130, 100, anchor=tkinter.NW, image=self.card_back1)
@@ -387,6 +402,8 @@ class tableWnd():
     def leave(self):
         sendMessage(self.socket,"dealer","/leave")
 
+
+#once user moves, buttons disappear
     def bet(self):
         sendMessage(self.socket,"dealer","/bet/"+str(self.w.get()))
         self.btn1.destroy()
@@ -409,23 +426,123 @@ class tableWnd():
         self.btn3.destroy()
         self.w.destroy()
 
-    def update(self):
+    def getPlayers(self):
         number, message = checkMail(self.socket)
+        self.players = []
+        players = []
         messages = self.messages + getMail(self.socket,message,number)
+        print("ALL MESSAGES ARE")
         print(messages)
+        i = 0
+        while i <= len(messages) and messages[i].split("/")[1]!="players":
+            i+=1
+        for j in range(int(messages[i].split("/")[2])):
+            players.append(messages[i].split("/")[3+2*j])
+        print(players)
+        print(self.mylogin)
+        self.players = players
+        if len(self.players)<5:
+            for j in range(5-len(self.players)):
+                self.players.append(None)
+        players = self.players
+        print(players)
+        while players[2]!=self.mylogin:
+            print("High")
+            players = rotate(players,1)
+        print(players)
+        self.players1 = players
+        #1 username
+        if players[0] != None:
+            self.lbl1 = tkinter.Label(self.mainFrame,text=players[0])
+            playername= self.canvas.create_window(40, 50, anchor=tkinter.NW, window=self.lbl1)
+        else:
+            self.lbl1.destroy()
+        #2 username
+        if players[1] != None:
+            self.lbl2 = tkinter.Label(self.mainFrame,text=players[1])
+            playername = self.canvas.create_window(50, 280, anchor=tkinter.NW, window=self.lbl2)
+        else:
+            self.lbl2.destroy()
+        #3 username
+        if players[2] != None:
+            self.lbl3 = tkinter.Label(self.mainFrame,text=players[2])
+            playername = self.canvas.create_window(270, 330, anchor=tkinter.NW, window=self.lbl3)
+        else:
+            self.lbl3.destroy()
+        #4 username
+        if players[3] != None:
+            self.lbl4 = tkinter.Label(self.mainFrame,text=players[3])
+            playername = self.canvas.create_window(490, 280, anchor=tkinter.NW, window=self.lbl4)
+        else:
+            self.lbl4.destroy()
+        #5 username
+        if players[4] != None:
+            self.lbl5 = tkinter.Label(self.mainFrame,text=players[4])
+            playername = self.canvas.create_window(500, 50, anchor=tkinter.NW, window=self.lbl5)
+        else:
+            self.lbl5.destroy()
+        if i < len(messages):
+            self.messages = messages[i+1:]
+            print(messages[i+1:])
+            print("SENT TO NEXT")
+
+    def update(self):
         sendMessage(self.socket,"dealer","/players")
+        self.mainFrame.after(1500,self.getPlayers)
+        messages = self.messages
         print(messages)
-        for (u,m) in messages:
+        print("CAME FROM PLAYERS")
+        for m in messages:
             if "/" in m:
                 if m.split("/")[1] == "cards":
-                    if m.split("/")[2] == "yours":
-                        cards = []
+                    print("GAAGAGA")
+                    if m.split("/")[2] == "your":
+                        card_6 =  m.split("/")[3]+m.split("/")[4]
+                        card_7 =  m.split("/")[5]+m.split("/")[6]
+                        card6 = PIL.Image.open('images/PNG/'+card_6+'.gif')
+                        card6 = card6.resize((35, 50), PIL.Image.ANTIALIAS)
+                        card7 = PIL.Image.open('images/PNG/'+card_7+'.gif')
+                        card7 = card7.resize((35, 50), PIL.Image.ANTIALIAS)
+                        self.card_6 = PIL.ImageTk.PhotoImage(card6)
+                        self.card_7 = PIL.ImageTk.PhotoImage(card7)
+                        cardimage = self.canvas.create_image(270, 240, anchor=tkinter.NW, image=self.card_6)
+                        cardimage = self.canvas.create_image(310, 240, anchor=tkinter.NW, image=self.card_7)
+                    elif m.split("/")[2] == "center":
                         print(m+"ARECARDS")
+                        if self.center == 0:
+                            card_1 =  m.split("/")[3]+m.split("/")[4]
+                            card_2 =  m.split("/")[5]+m.split("/")[6]
+                            card_3 =  m.split("/")[7]+m.split("/")[8]
+                            print(card_1,card_2,card_3)
+                            card1 = PIL.Image.open('images/PNG/'+card_1+'.gif')
+                            card1 = card1.resize((35, 50), PIL.Image.ANTIALIAS)
+                            card2 = PIL.Image.open('images/PNG/'+card_2+'.gif')
+                            card2 = card2.resize((35, 50), PIL.Image.ANTIALIAS)
+                            card3 = PIL.Image.open('images/PNG/'+card_3+'.gif')
+                            card3 = card3.resize((35, 50), PIL.Image.ANTIALIAS)
+                            self.card_1 = PIL.ImageTk.PhotoImage(card1)
+                            self.card_2 = PIL.ImageTk.PhotoImage(card2)
+                            self.card_3 = PIL.ImageTk.PhotoImage(card3)
+                            cardimage = self.canvas.create_image(195, 160, anchor=tkinter.NW, image=self.card_1)
+                            cardimage = self.canvas.create_image(240, 160, anchor=tkinter.NW, image=self.card_2)
+                            cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card_3)
+                            self.center += 1
+                        elif self.center == 1:
+                            card_4 =  m.split("/")[3]+m.split("/")[4]
+                            card4 = PIL.Image.open('images/PNG/'+card_4+'.gif')
+                            card4 = card4.resize((35, 50), PIL.Image.ANTIALIAS)
+                            self.card_4 = PIL.ImageTk.PhotoImage(card4)
+                            cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card_4)
+                            self.center += 1
+                        else:
+                            card_5 =  m.split("/")[3]+m.split("/")[4]
+                            card5 = PIL.Image.open('images/PNG/'+card_5+'.gif')
+                            card5 = card5.resize((35, 50), PIL.Image.ANTIALIAS)
+                            self.card_5 = PIL.ImageTk.PhotoImage(card5)
+                            cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_5)
+                            self.center += 1
 
-
-
-                    #elif m.split("/")[2] == "center":
-
+                #if it is player's turn, buttons appear
                 elif m.split("/")[1] == "move":
                     print(m)
                     self.btn1 = tkinter.Button(self.canvas, text = "Check/Call",command = self.check)
@@ -437,29 +554,22 @@ class tableWnd():
                     self.w = tkinter.Scale(self.mainFrame,from_=0, to=100,orient = HORIZONTAL)
                     scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
 
-                #elif m.split("/")[1] == "no":
+                elif m.split("/")[1] == "won":
+                    messagebox.showinfo("Information","You won"+ m.split("/")[2])
 
+                elif m.split("/")[1] == "leave":
+                    self.root.destroy()
+                    self.root = tkinter.Tk()
+                    self.root.title("Table")
+                    app = pokerWnd(self.root,self.socket,self.mylogin)
+                    self.root.mainloop()
                 elif m.split("/")[1] == "game":
                     print(m)
                     card_back = PIL.Image.open('images/PNG/red_back.gif')
-                    card_back = card_back.resize((35, 50), PIL.Image.ANTIALIAS)
-                    self.card_back = PIL.ImageTk.PhotoImage(card_back)
-                    #central cards
-                    cardimage = self.canvas.create_image(195, 160, anchor=tkinter.NW, image=self.card_back)
-                    cardimage = self.canvas.create_image(240, 160, anchor=tkinter.NW, image=self.card_back)
-                    cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card_back)
-                    cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card_back)
-                    cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_back)
                     card_back = card_back.resize((25, 40), PIL.Image.ANTIALIAS)
                     self.card_back1 = PIL.ImageTk.PhotoImage(card_back)
-                    if len(self.players)<5:
-                        for i in range(5-len(self.players)):
-                            self.players.append(None)
-                    players = self.players
+                    players = self.players1
                     print(players)
-                    while players[2]!=self.mylogin:
-                        print("High")
-                        players = rotate(players,1)
                     if players[0] != None:
                         cardimage = self.canvas.create_image(100, 100, anchor=tkinter.NW, image=self.card_back1)
                         cardimage = self.canvas.create_image(130, 100, anchor=tkinter.NW, image=self.card_back1)
@@ -467,10 +577,6 @@ class tableWnd():
                     if players[1] != None:
                         cardimage = self.canvas.create_image(100, 220, anchor=tkinter.NW, image=self.card_back1)
                         cardimage = self.canvas.create_image(130, 220, anchor=tkinter.NW, image=self.card_back1)
-                    #3 username
-                    if players[2] != None:
-                        cardimage = self.canvas.create_image(270, 240, anchor=tkinter.NW, image=self.card_back1)
-                        cardimage = self.canvas.create_image(300, 240, anchor=tkinter.NW, image=self.card_back1)
                     #4 username
                     if players[3] != None:
                         cardimage = self.canvas.create_image(440, 220, anchor=tkinter.NW, image=self.card_back1)
@@ -480,42 +586,7 @@ class tableWnd():
                         cardimage = self.canvas.create_image(440, 100, anchor=tkinter.NW, image=self.card_back1)
                         cardimage = self.canvas.create_image(470, 100, anchor=tkinter.NW, image=self.card_back1)
 
-                elif m.split("/")[1] == "players":
-                    players = []
-                    print(m)
-                    for i in range(int(m.split("/")[2])):
-                        players.append(m.split("/")[3+2*i])
-                    print(players)
-                    print(self.mylogin)
-                    self.players = players
-                    if len(self.players)<5:
-                        for i in range(5-len(self.players)):
-                            self.players.append(None)
-                    players = self.players
-                    print(players)
-                    while players[2]!=self.mylogin:
-                        print("High")
-                        players = rotate(players,1)
-                    #1 username
-                    if players[0] != None:
-                        self.lbl1 = tkinter.Label(self.mainFrame,text=players[0])
-                        playername= self.canvas.create_window(40, 50, anchor=tkinter.NW, window=self.lbl1)
-                    #2 username
-                    if players[1] != None:
-                        self.lbl2 = tkinter.Label(self.mainFrame,text=players[1])
-                        playername = self.canvas.create_window(50, 280, anchor=tkinter.NW, window=self.lbl2)
-                    #3 username
-                    if players[2] != None:
-                        self.lbl3 = tkinter.Label(self.mainFrame,text=players[2])
-                        playername = self.canvas.create_window(270, 330, anchor=tkinter.NW, window=self.lbl3)
-                    #4 username
-                    if players[3] != None:
-                        self.lbl4 = tkinter.Label(self.mainFrame,text=players[3])
-                        playername = self.canvas.create_window(490, 280, anchor=tkinter.NW, window=self.lbl4)
-                    #5 username
-                    if players[4] != None:
-                        self.lbl5 = tkinter.Label(self.mainFrame,text=players[4])
-                        playername = self.canvas.create_window(500, 50, anchor=tkinter.NW, window=self.lbl5)
+        self.messages = []
         self.mainFrame.after(500,self.update)
 
 

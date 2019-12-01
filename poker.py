@@ -325,10 +325,10 @@ class Player(object):
             for i in table.users:
                 if i == self.username:
                     table.users[i] = None
-            sendMessage(socket,self.username,"/ok")
+            sendMessage(socket,self.username,"/leave")
             self.table = None
         else:
-            sendMessage(socket,self.username,"/no/wasnt")
+            sendMessage(socket,self.username,"/no")
 
     def sendPlayers(self):
         if self.table!=None:
@@ -373,6 +373,8 @@ class Game(object):
         for i in range(5):
             self.center.append(deck.getCard())
         self.players = []
+        print("-->> ARE PLAYERS")
+        print(players)
         #give each player 2 cards and send them in messages
         for player in players:
             player.giveCard(2,cards)
@@ -605,15 +607,21 @@ class Game(object):
             #those users are winners
         print(winners)
         number = len(winners)
+        winamount = self.bank//number
         for gamer in self.players:
             if gamer.username in winners:
-                sendMessage(socket,gamer.username,"/won")
+                gamer.currentChips += winamount
+                gamer.chips += winamount
+                sendMessage(socket,gamer.username,"/won/"+winamount)
+            sendMessage(socket,gamer.username,"/end")
+
 
 
 
 
     #send message with a choice
     def giveChoice(self,player):
+        print("SENDING"+player.username)
         sendMessage(socket,player.username,"/move")
 
     #if player is checking or calling
@@ -631,27 +639,30 @@ class Game(object):
             #check if he is the last person in the queve
             elif self.i != len(self.players):
                 #if not, then next person moves
+                print(self.players)
+                print(self.i)
                 self.giveChoice(self.players[self.i])
                 self.currentMover = self.players[self.i].username
+                print("I SENT" + str(self.players[self.i]))
             elif self.turn != 4:
                 #if it is the end of current turn show central cards
                 for gamer in self.players:
-                    sendMessage(socket,gamer.username,"cards/center")
                     if self.turn == 1:
                         self.center[0].visible = True
                         self.center[1].visible = True
                         self.center[2].visible = True
-                        sendMessage(socket,gamer.username,str(self.center[0]))
-                        sendMessage(socket,gamer.username,str(self.center[1]))
-                        sendMessage(socket,gamer.username,str(self.center[2]))
+                        sendMessage(socket,gamer.username,"/cards/center"+str(self.center[0])+str(self.center[1])+str(self.center[2]))
                     else:
                         self.center[self.turn+1].visible = True
-                        sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                        sendMessage(socket,gamer.username,"/cards/center"+str(self.center[self.turn+1]))
                 #increment the turns' number and start moving the first player
                 self.turn += 1
                 self.i = 0
+                print(self.players)
+                print(self.i)
                 self.giveChoice(self.players[self.i])
                 self.currentMover = self.players[self.i].username
+                print("I SENT" + str(self.players[self.i]))
             else:
                 self.checkWinner()
         else:
@@ -684,17 +695,14 @@ class Game(object):
                     self.currentMover = self.players[self.i].username
                 elif self.turn != 4:
                     for gamer in self.players:
-                        sendMessage(socket,gamer.username,"cards/center")
                         if self.turn == 1:
                             self.center[0].visible = True
                             self.center[1].visible = True
                             self.center[2].visible = True
-                            sendMessage(socket,gamer.username,str(self.center[0]))
-                            sendMessage(socket,gamer.username,str(self.center[1]))
-                            sendMessage(socket,gamer.username,str(self.center[2]))
+                            sendMessage(socket,gamer.username,"/cards/center"+str(self.center[0])+str(self.center[1])+str(self.center[2]))
                         else:
                             self.center[self.turn+1].visible = True
-                            sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                            sendMessage(socket,gamer.username,"/cards/center"+str(self.center[self.turn+1]))
                     self.turn += 1
                     self.i = 0
                     self.giveChoice(self.players[self.i])
@@ -736,17 +744,14 @@ class Game(object):
                         self.currentMover = self.players[self.i].username
                     elif self.turn != 4 and len(self.players):
                         for gamer in self.players:
-                            sendMessage(socket,gamer.username,"/cards/center")
                             if self.turn == 1:
                                 self.center[0].visible = True
                                 self.center[1].visible = True
                                 self.center[2].visible = True
-                                sendMessage(socket,gamer.username,str(self.center[0]))
-                                sendMessage(socket,gamer.username,str(self.center[1]))
-                                sendMessage(socket,gamer.username,str(self.center[2]))
+                                sendMessage(socket,gamer.username,"/cards/center"+str(self.center[0])+str(self.center[1])+str(self.center[2]))
                             else:
                                 self.center[self.turn+1].visible = True
-                                sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                                sendMessage(socket,gamer.username,"/cards/center"+str(self.center[self.turn+1]))
                         self.turn += 1
                         self.i = 0
                         self.giveChoice(self.players[self.i])
@@ -776,17 +781,14 @@ class Game(object):
                         self.checkWinner()
                     elif self.turn != 4 and len(self.players):
                         for gamer in self.players:
-                            sendMessage(socket,gamer.username,"/cards/center")
                             if self.turn == 1:
                                 self.center[0].visible = True
                                 self.center[1].visible = True
                                 self.center[2].visible = True
-                                sendMessage(socket,gamer.username,str(self.center[0]))
-                                sendMessage(socket,gamer.username,str(self.center[1]))
-                                sendMessage(socket,gamer.username,str(self.center[2]))
+                                sendMessage(socket,gamer.username,"/cards/center"+str(self.center[0])+str(self.center[1])+str(self.center[2]))
                             else:
                                 self.center[self.turn+1].visible = True
-                                sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                                sendMessage(socket,gamer.username,"/cards/center"+str(self.center[self.turn+1]))
                         self.turn += 1
                         self.i = 0
                         self.giveChoice(self.players[self.i])
@@ -819,17 +821,14 @@ class Game(object):
                     self.currentMover = self.players[self.i].username
                 elif self.turn != 4:
                     for gamer in self.players:
-                        sendMessage(socket,gamer.username,"/cards/center/")
                         if self.turn == 1:
                             self.center[0].visible = True
                             self.center[1].visible = True
                             self.center[2].visible = True
-                            sendMessage(socket,gamer.username,str(self.center[0]))
-                            sendMessage(socket,gamer.username,str(self.center[1]))
-                            sendMessage(socket,gamer.username,str(self.center[2]))
+                            sendMessage(socket,gamer.username,"/cards/center"+str(self.center[0])+str(self.center[1])+str(self.center[2]))
                         else:
                             self.center[self.turn+1].visible = True
-                            sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                            sendMessage(socket,gamer.username,"/cards/center"+str(self.center[self.turn+1]))
                     self.turn += 1
                     self.i = 0
                     self.giveChoice(self.players[self.i])
@@ -844,17 +843,14 @@ class Game(object):
                 self.currentMover = self.players[self.i].username
             elif self.turn != 4:
                 for gamer in self.players:
-                    sendMessage(socket,gamer.username,"/cards/center")
                     if self.turn == 1:
                         self.center[0].visible = True
                         self.center[1].visible = True
                         self.center[2].visible = True
-                        sendMessage(socket,gamer.username,str(self.center[0]))
-                        sendMessage(socket,gamer.username,str(self.center[1]))
-                        sendMessage(socket,gamer.username,str(self.center[2]))
+                        sendMessage(socket,gamer.username,"/cards/center"+str(self.center[0])+str(self.center[1])+str(self.center[2]))
                     else:
                         self.center[self.turn+1].visible = True
-                        sendMessage(socket,gamer.username,str(self.center[self.turn+1]))
+                        sendMessage(socket,gamer.username,"/cards/center"+str(self.center[self.turn+1]))
                 self.turn += 1
                 self.i = 0
                 self.giveChoice(self.players[self.i])
@@ -869,14 +865,14 @@ class startWnd():
         self.root = root
         self.mainFrame = tkinter.Frame(root)
         self.mainFrame.pack()
-        self.mainFrame.after(500,self.update)
+        self.mainFrame.after(50,self.update)
 
     #This should automatically create tables by checking every second(OOP side) and get commands from players
     def update(self):
         receiveCommands(socket)
         if len(players)-1 != len(tables) and len(players) != 0:
             createTable()
-        self.mainFrame.after(500,self.update)
+        self.mainFrame.after(50,self.update)
 
 
 
