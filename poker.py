@@ -612,7 +612,7 @@ class Game(object):
             if gamer.username in winners:
                 gamer.currentChips += winamount
                 gamer.chips += winamount
-                sendMessage(socket,gamer.username,"/won/"+winamount)
+                sendMessage(socket,gamer.username,"/won/"+str(winamount))
             sendMessage(socket,gamer.username,"/end")
 
 

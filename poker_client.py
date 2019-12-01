@@ -3,6 +3,7 @@ from PIL import ImageTk
 import PIL.Image
 from tkinter import *
 from tkinter import simpledialog
+from tkinter import messagebox
 import socket
 
 def StartConnection (IPAddress, PortNumber):
@@ -285,6 +286,7 @@ class pokerWnd():
         i = 0
         messages = getMail(self.socket,message,number)
         while i <= number and messages[i].split("/")[1]!="tables":
+            messages.append(messages[i])
             i+=1
         print(messages[i]+" HAHAHAHAAHHA")
         for j in range(int(messages[i].split("/")[2])):
@@ -313,7 +315,6 @@ class pokerWnd():
                 if messages[i].split("/")[2] == "joinTable":
                     print("GOODBYE")
                     print(messages[i+1:])
-                    #sendMessage(self.socket,"dealer","/players")
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
@@ -435,6 +436,7 @@ class tableWnd():
         print(messages)
         i = 0
         while i <= len(messages) and messages[i].split("/")[1]!="players":
+            messages.append(messages[i])
             i+=1
         for j in range(int(messages[i].split("/")[2])):
             players.append(messages[i].split("/")[3+2*j])
@@ -485,10 +487,13 @@ class tableWnd():
             self.messages = messages[i+1:]
             print(messages[i+1:])
             print("SENT TO NEXT")
+        print("RETURNING")
+        print(players)
+        return players
 
     def update(self):
         sendMessage(self.socket,"dealer","/players")
-        self.mainFrame.after(1500,self.getPlayers)
+        current_players = self.mainFrame.after(1500,self.getPlayers)
         messages = self.messages
         print(messages)
         print("CAME FROM PLAYERS")
@@ -555,36 +560,17 @@ class tableWnd():
                     scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
 
                 elif m.split("/")[1] == "won":
-                    messagebox.showinfo("Information","You won"+ m.split("/")[2])
+                    messagebox.showinfo("Game End","You won "+ m.split("/")[2])
 
-                elif m.split("/")[1] == "leave":
+                elif m.split("/")[1] == "leave" or m.split("/")[1] == "end":
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
                     app = pokerWnd(self.root,self.socket,self.mylogin)
                     self.root.mainloop()
-                elif m.split("/")[1] == "game":
-                    print(m)
-                    card_back = PIL.Image.open('images/PNG/red_back.gif')
-                    card_back = card_back.resize((25, 40), PIL.Image.ANTIALIAS)
-                    self.card_back1 = PIL.ImageTk.PhotoImage(card_back)
-                    players = self.players1
-                    print(players)
-                    if players[0] != None:
-                        cardimage = self.canvas.create_image(100, 100, anchor=tkinter.NW, image=self.card_back1)
-                        cardimage = self.canvas.create_image(130, 100, anchor=tkinter.NW, image=self.card_back1)
-                    #2 username
-                    if players[1] != None:
-                        cardimage = self.canvas.create_image(100, 220, anchor=tkinter.NW, image=self.card_back1)
-                        cardimage = self.canvas.create_image(130, 220, anchor=tkinter.NW, image=self.card_back1)
-                    #4 username
-                    if players[3] != None:
-                        cardimage = self.canvas.create_image(440, 220, anchor=tkinter.NW, image=self.card_back1)
-                        cardimage = self.canvas.create_image(470, 220, anchor=tkinter.NW, image=self.card_back1)
-                    #5 username
-                    if players[4] != None:
-                        cardimage = self.canvas.create_image(440, 100, anchor=tkinter.NW, image=self.card_back1)
-                        cardimage = self.canvas.create_image(470, 100, anchor=tkinter.NW, image=self.card_back1)
+                elif m.split("/")[1] == "no":
+                    messagebox.showerror("Error", m.split("/")[2])
+                
 
         self.messages = []
         self.mainFrame.after(500,self.update)
