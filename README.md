@@ -13,7 +13,7 @@ If you already have a network, and Dealer on the network, you can download Clien
 Functionality:
 
 Dealer (Game Engine): 
-- Start Games if two or more people joined table (Will be several different tables with capacity of up to 9 people)
+- Start Games if two or more people joined table (Will be several different tables with capacity of up to 5 people)
 - Mix card stack
 - Share 2 cards to each player
 - Open cards
@@ -23,11 +23,10 @@ Dealer (Game Engine):
 - Give time for each client to move (if client takes more time than given, automatically consider as Fold)
 
 Client:
-- Can join to the game (Up to 9 people on one table)
+- Can join to the game (Up to 5 people on one table)
 - Will initially have 50000 poker chips
 - Choose to Bet,Raise,Fold or Check (Poker movements)
 - Win/Loss
-- Chat with other people sitting the same table
 
 GUI description (You can watch cool video by this link: https://youtu.be/uxiS_aVHGbY):
 
@@ -45,7 +44,7 @@ Further improvements:
 
 Preliminary list of python libaries used for this project:
 - socket
-- pygame
+- tkinter
 - Random
 
 Nurassyl Zekenov
