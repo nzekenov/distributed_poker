@@ -622,7 +622,7 @@ class Game(object):
     #send message with a choice
     def giveChoice(self,player):
         print("SENDING"+player.username)
-        sendMessage(socket,player.username,"/move")
+        sendMessage(socket,player.username,"/move/"+str(self.bank))
 
     #if player is checking or calling
     def check(self,player):
@@ -873,8 +873,6 @@ class startWnd():
         if len(players)-1 != len(tables) and len(players) != 0:
             createTable()
         self.mainFrame.after(50,self.update)
-
-
 
 
 

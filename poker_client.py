@@ -318,15 +318,15 @@ class pokerWnd():
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
-                    app = tableWnd(self.root,self.socket,self.mylogin,messages[i+1:])
+                    app = tableWnd(self.root,self.socket,self.mylogin,messages[i+1:],self.answer)
                     self.root.mainloop()
 
 
 
     def joinTable(self,tableId):
-        answer = simpledialog.askstring("Input", "How many chips to use?",parent=self.mainFrame)
-        print(answer)
-        sendMessage(self.socket,"dealer","/join/"+tableId+"/"+answer)
+        self.answer = simpledialog.askstring("Input", "How many chips to use?",parent=self.mainFrame)
+        print(self.answer)
+        sendMessage(self.socket,"dealer","/join/"+tableId+"/"+self.answer)
 
     def alarm(self):
         sendMessage(self.socket,"dealer","/tables")
@@ -339,13 +339,14 @@ def rotate(l,n):
     return l[n:] + l[:n]
 
 class tableWnd():
-    def __init__(self,root,socket,mylogin,messages):
+    def __init__(self,root,socket,mylogin,messages,mychips):
         self.players = []
         self.players1 = []
         self.wnd = wnd
         self.socket = socket
         self.mylogin = mylogin
         self.messages = messages
+        self.chips  = mychips
         self.center = 0
         print(self.messages)
         self.mainFrame = tkinter.Frame(root)
@@ -439,6 +440,8 @@ class tableWnd():
             messages.append(messages[i])
             i+=1
         for j in range(int(messages[i].split("/")[2])):
+            if messages[i].split("/")[3+2*j] == self.mylogin:
+                self.chips = messages[i].split("/")[4+2*j]
             players.append(messages[i].split("/")[3+2*j])
         print(players)
         print(self.mylogin)
@@ -483,6 +486,8 @@ class tableWnd():
             playername = self.canvas.create_window(500, 50, anchor=tkinter.NW, window=self.lbl5)
         else:
             self.lbl5.destroy()
+        self.lbl6 = tkinter.Label(self.mainFrame, text = "0")
+        playername = self.canvas.create_window(290, 50, anchor=tkinter.NW, window=self.lbl6)
         if i < len(messages):
             self.messages = messages[i+1:]
             print(messages[i+1:])
@@ -549,14 +554,17 @@ class tableWnd():
                 #if it is player's turn, buttons appear
                 elif m.split("/")[1] == "move":
                     print(m)
-                    self.btn1 = tkinter.Button(self.canvas, text = "Check/Call",command = self.check)
+                    self.btn1 = tkinter.Button(self.mainFrame, text = "Check/Call",command = self.check)
                     button1 = self.canvas.create_window(265, 300, anchor=tkinter.NW, window=self.btn1)
                     self.btn2 = tkinter.Button(self.mainFrame, text = "Fold",command = self.fold)
                     button2 = self.canvas.create_window(360, 300, anchor=tkinter.NW, window=self.btn2)
                     self.btn3 = tkinter.Button(self.mainFrame, text = "Bet/Raise",command = self.bet)
                     button3 = self.canvas.create_window(180, 300, anchor=tkinter.NW, window=self.btn3)
-                    self.w = tkinter.Scale(self.mainFrame,from_=0, to=100,orient = HORIZONTAL)
+                    self.w = tkinter.Scale(self.mainFrame,from_=100, to=self.chips,orient = HORIZONTAL)
                     scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
+                    self.lbl6.destroy()
+                    self.lbl6 = tkinter.Label(self.mainFrame, text = messages[i].split("/")[2])
+                    label = self.canvas.create_window(290,30, anchor=tkinter.NW, window=self.lbl6)
 
                 elif m.split("/")[1] == "won":
                     messagebox.showinfo("Game End","You won "+ m.split("/")[2])
