@@ -211,15 +211,16 @@ class Card(object):
 
     #shows the card, if it is visible, otherwise "Card" (Backside)
     def __repr__(self):
+        values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":"J", "Queen":"Q", "King":"Q", "Ace":"A"}
         if self.visible == True:
-            return "/" + str(self.value) + "/" + str(self.suit)
+            return "/" + str(values[(self.value)]) + "/" + str(self.suit)
         return "Card"
 
 #RandomDeck
 class RandomDeck(list):
     #initializes a list of random cards with 52 elements
     def __init__(self):
-        suits = ["Spades", "Hearts", "Diamonds", "Clubs"]
+        suits = ["S", "H", "D", "C"]
         values = {2:"Two", 3:"Three", 4:"Four", 5:"Five", 6:"Six", 7:"Seven", 8:"Eight", 9:"Nine", 10:"Ten", 11:"Jack", 12:"Queen", 13:"King", 14:"Ace"}
         for value in values:
             for suit in suits:
@@ -252,20 +253,21 @@ class Table(object):
         return "/"+str(empty)
 
     #adds user to table's users
-    def addUser(self,player,chips):
+    def addUser(self,player):
         i = 0
         while self.users[i]!=None:
             i+=1
-        self.users[i] = player,chips
+        self.users[i] = playerlist[player]
         print(self.users)
         count = 0
         currentPlayers = []
         for i in range(len(self.users)):
             if self.users[i] != None:
-                user,a = self.users[i]
+                user = self.users[i]
                 count+=1
                 currentPlayers.append(user)
-                print(currentPlayers)
+                sendMessage(socket,user.username,"/game")
+        print(currentPlayers)
         if count > 1 and self.inGame == False:
             self.inGame = True
             self.game = Game(currentPlayers,RandomDeck())
@@ -286,6 +288,10 @@ class Player(object):
         self.rank = 0
         self.highest = 0
 
+
+    def __repr__(self):
+        return "/"+str(self.username)+"/"+str(self.chips)
+
     #gives a card from the deck of game
     def giveCard(self,number,deck):
         for i in range(number):
@@ -301,10 +307,10 @@ class Player(object):
                     if user != None:
                         counter += 1
                 if counter <5:
-                    table.addUser(self,chipsNumber)
+                    sendMessage(socket,self.username,"/ok/joinTable")
+                    table.addUser(self.username)
                     self.currentChips = chipsNumber
                     self.table = table
-                    sendMessage(socket,self.username,"/ok/joinTable")
                 else:
                     sendMessage(socket,self.username,"/no/full")
             else:
@@ -327,14 +333,18 @@ class Player(object):
     def sendPlayers(self):
         if self.table!=None:
             table = self.table
-            users = []
-            for i in table.users:
-                if i!= None:
-                    users.append(i)
-            message = users.join("/")
-            sendMessage(socket,self.username,"/players/"+str(len(users))+"/"+message)
+            users = ""
+            count = 0
+            for i in range(len(table.users)):
+                if table.users[i]!= None:
+                    users += "/"+str(table.users[i].username)+"/"+str(table.users[i].currentChips)
+                    count += 1
+            print(users)
+            print(self.username)
+            sendMessage(socket,self.username,"/players/"+str(count)+users)
         else:
             sendMessage(socket,self.username,"/no/not_sitting")
+
 #create a new table
 def createTable():
     id = len(tables)
@@ -366,6 +376,7 @@ class Game(object):
         #give each player 2 cards and send them in messages
         for player in players:
             player.giveCard(2,cards)
+            sendMessage(socket,player.username,"/game")
             player.gaveAmount = 0
             player.rank = 0
             self.players.append(player)
@@ -611,7 +622,7 @@ class Game(object):
         if self.isBetting == False:
             #if he can check, next person should move
             for gamer in self.players:
-                sendMessage(socket,gamer.username,str(player) + " have checked")
+                sendMessage(socket,gamer.username,"/check/"+str(player))
             self.i += 1
             #check if number of users is more than 1
             if len(self.players) == 1:
@@ -625,7 +636,7 @@ class Game(object):
             elif self.turn != 4:
                 #if it is the end of current turn show central cards
                 for gamer in self.players:
-                    sendMessage(socket,gamer.username,"Central cards are: ")
+                    sendMessage(socket,gamer.username,"cards/center")
                     if self.turn == 1:
                         self.center[0].visible = True
                         self.center[1].visible = True
@@ -657,7 +668,7 @@ class Game(object):
             self.bank += amount
             self.betted.append(player)
             for gamer in self.players:
-                sendMessage(socket,gamer.username,str(player) + " is calling " + str(amount))
+                sendMessage(socket,gamer.username,"/call/"+str(amount)+"/"+str(player))
             self.i += 1
             if len(self.betted)!=len(self.players):
                 if self.i==len(self.players):
@@ -673,7 +684,7 @@ class Game(object):
                     self.currentMover = self.players[self.i].username
                 elif self.turn != 4:
                     for gamer in self.players:
-                        sendMessage(socket,gamer.username,"Central cards are: ")
+                        sendMessage(socket,gamer.username,"cards/center")
                         if self.turn == 1:
                             self.center[0].visible = True
                             self.center[1].visible = True
@@ -703,7 +714,7 @@ class Game(object):
                 #betAmount is equal to number of chips given by player
                 self.betAmount = amount
                 for gamer in self.players:
-                    sendMessage(socket,gamer.username,str(player) + " have bet" + str(amount))
+                    sendMessage(socket,gamer.username,"/bet/" + str(amount) + "/" + str(player))
                 #add the amount to table's bank and remove from player's bank
                 playerlist[player].currentChips -= amount
                 playerlist[player].chips -= amount
@@ -725,7 +736,7 @@ class Game(object):
                         self.currentMover = self.players[self.i].username
                     elif self.turn != 4 and len(self.players):
                         for gamer in self.players:
-                            sendMessage(socket,gamer.username,"Central cards are: ")
+                            sendMessage(socket,gamer.username,"/cards/center")
                             if self.turn == 1:
                                 self.center[0].visible = True
                                 self.center[1].visible = True
@@ -743,13 +754,13 @@ class Game(object):
                     else:
                         self.checkWinner()
             else:
-                sendMessage(socket,player,"You have not enough chips")
+                sendMessage(socket,player,"/no/not_enough")
                 self.giveChoice(self.players[self.i])
         else:
             if amount+self.betAmount <= playerlist[player].currentChips:
                 self.betAmount = amount+self.betAmount
                 for gamer in self.players:
-                    sendMessage(socket,gamer.username,str(gamer.username) + " have raised" + str(amount))
+                    sendMessage(socket,gamer.username,"/raise/"+str(amount)+"/"+str(gamer.username))
                 playerlist[player].currentChips -= self.betAmount
                 playerlist[player].chips -= self.betAmount
                 self.bank += self.betAmount
@@ -765,7 +776,7 @@ class Game(object):
                         self.checkWinner()
                     elif self.turn != 4 and len(self.players):
                         for gamer in self.players:
-                            sendMessage(socket,gamer.username,"Central cards are: ")
+                            sendMessage(socket,gamer.username,"/cards/center")
                             if self.turn == 1:
                                 self.center[0].visible = True
                                 self.center[1].visible = True
@@ -783,7 +794,7 @@ class Game(object):
                     else:
                         self.checkWinner()
             else:
-                sendMessage(socket,player.username,"You have not enough chips")
+                sendMessage(socket,player.username,"/no/not_enough")
                 self.giveChoice(self.players[self.i])
         print(self.bank)
 
@@ -791,7 +802,7 @@ class Game(object):
 
     def fold(self,player):
         for gamer in self.players:
-            sendMessage(socket,gamer.username,str(player.username) + " have fold")
+            sendMessage(socket,gamer.username,"/fold/"+str(player.username))
         playerlist[player].cards = None
         self.players.remove(player)
         if self.isBetting == True:
@@ -808,7 +819,7 @@ class Game(object):
                     self.currentMover = self.players[self.i].username
                 elif self.turn != 4:
                     for gamer in self.players:
-                        sendMessage(socket,gamer.username,"Central cards are: ")
+                        sendMessage(socket,gamer.username,"/cards/center/")
                         if self.turn == 1:
                             self.center[0].visible = True
                             self.center[1].visible = True
@@ -833,7 +844,7 @@ class Game(object):
                 self.currentMover = self.players[self.i].username
             elif self.turn != 4:
                 for gamer in self.players:
-                    sendMessage(socket,gamer.username,"Central cards are: ")
+                    sendMessage(socket,gamer.username,"/cards/center")
                     if self.turn == 1:
                         self.center[0].visible = True
                         self.center[1].visible = True
@@ -911,7 +922,7 @@ def receiveCommands(s):
                         #adds player to the chosen table,seat with chosen amount of chips
                     elif command[1] == "join":
                         if u in players:
-                            playerlist[u].joinTable(tables[int(command[2])],int(command[2]))
+                            playerlist[u].joinTable(tables[int(command[2])],int(command[3]))
                             print(tables[int(command[2])].users)
                         else:
                             sendMessage(s,u,"/no/register")
@@ -920,6 +931,13 @@ def receiveCommands(s):
                         if u in players:
                             if playerlist[u].table != None:
                                 playerlist[u].leaveTable()
+                        else:
+                            sendMessage(s,u,"/no/register")
+                        #user wants to skip his step
+                    elif command[1] == "players":
+                        if u in players:
+                            if playerlist[u].table != None:
+                                playerlist[u].sendPlayers()
                         else:
                             sendMessage(s,u,"/no/register")
                         #user wants to skip his step
@@ -991,7 +1009,7 @@ def receiveCommands(s):
 
 
 socket = StartConnection("86.36.46.10", 15112)
-while not login (socket, "nzekenov", "nzekenov"):
+while not login (socket, "dealer", "dealer"):
     print ("Something went wrong, launch the program again")
 players = []
 playerlist = {}
