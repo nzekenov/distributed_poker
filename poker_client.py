@@ -546,7 +546,6 @@ class tableWnd():
                             self.card_5 = PIL.ImageTk.PhotoImage(card5)
                             cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_5)
                             self.center += 1
-
                 #if it is player's turn, buttons appear
                 elif m.split("/")[1] == "move":
                     print(m)
@@ -570,7 +569,7 @@ class tableWnd():
                     self.root.mainloop()
                 elif m.split("/")[1] == "no":
                     messagebox.showerror("Error", m.split("/")[2])
-                
+
 
         self.messages = []
         self.mainFrame.after(500,self.update)
