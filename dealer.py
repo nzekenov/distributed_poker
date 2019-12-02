@@ -176,7 +176,6 @@ def sendMessage(s, friend, message):
     size = str(l)
     while len(size)<5:
         size = "0" + size
-    print(size)
     byteString = bytes(friend,"utf-8")+b"@"+bytes(message,"utf-8")+ b"\n"
     #send a message to server to send a message to friend
     s.send(b"@"+bytes(size,"utf-8")+b"@sendmsg@"+byteString)
@@ -190,7 +189,6 @@ def sendMessage(s, friend, message):
     #show whether sent successfully or not
     if message[1:3]=="ok":
         return True
-    print(message)
     return False
 
 def SendMessage(s):
@@ -258,7 +256,6 @@ class Table(object):
         while self.users[i]!=None:
             i+=1
         self.users[i] = playerlist[player]
-        print(self.users)
         count = 0
         currentPlayers = []
         for i in range(len(self.users)):
@@ -266,7 +263,6 @@ class Table(object):
                 user = self.users[i]
                 count+=1
                 currentPlayers.append(user)
-        print(currentPlayers)
         if count > 1 and self.inGame == False:
             self.inGame = True
             self.game = Game(currentPlayers,RandomDeck(),self.id)
@@ -288,7 +284,6 @@ class Table(object):
                 user = self.users[i]
                 count+=1
                 currentPlayers.append(user)
-        print(currentPlayers)
         self.inGame = True
         self.game = Game(currentPlayers,RandomDeck(),self.id)
 
@@ -355,8 +350,6 @@ class Player(object):
                 if table.users[i]!= None:
                     users += "/"+str(table.users[i].username)+"/"+str(table.users[i].currentChips)
                     count += 1
-            print(users)
-            print(self.username)
             sendMessage(socket,self.username,"/players/"+str(count)+users)
         else:
             sendMessage(socket,self.username,"/no/not_sitting")
@@ -368,7 +361,6 @@ def createTable():
 
 #sequence checker
 def checkForSequence(a):
-    print(a)
     #if non-consecutive numbers identified, returns False
     for i in range(4):
         if a[i]+1 != a[i+1]:
@@ -390,8 +382,6 @@ class Game(object):
         for i in range(5):
             self.center.append(deck.getCard())
         self.players = []
-        print("-->> ARE PLAYERS")
-        print(players)
         #give each player 2 cards and send them in messages
         for player in players:
             player.cards = []
@@ -451,7 +441,6 @@ class Game(object):
                 uniqueCards.append(values[card.value])
                 if card.value == "Ace":
                     uniqueCards.append(1)
-        print(uniqueCards)
         #puts cards in order
         uniqueCards.sort()
         #if the length of the new list is less than 5, return False
@@ -554,10 +543,8 @@ class Game(object):
                 player.highest = 0
                 player.rank = 0
                 allCards = player.cards+self.center
-                print(allCards)
                 values = {"Two":2, "Three":3, "Four":4, "Five":5, "Six":6, "Seven":7, "Eight":8, "Nine":9, "Ten":10, "Jack":11, "Queen":12, "King":13, "Ace":14}
                 allCards = sorted(allCards, key=lambda x: values[x.value])
-                print(allCards)
                 #Royal FLUSH or Street Flush Combination (Highest 5/ Any 5 consecutive cards of the same suit)
                 if self.isFlush(allCards)[0] and self.isStreet(allCards)[0]:
                     if self.isStreet(allCards)[1]==14:
@@ -599,13 +586,9 @@ class Game(object):
                 else:
                     player.rank = 1
                     player.highest = self.highest(allCards)
-                print(player.rank)
-                print(player.highest)
                 rankings.append((player.rank,player.highest,player.username))
             rankings.sort(key=lambda tup:tup[0])
             highest_rank,card,username = rankings[0]
-            print(rankings)
-            print(str(highest_rank) + "IS HIGHEST RANK")
             count = 0
             cards = [(card,username)]
             #identify users with highest rank
@@ -613,7 +596,6 @@ class Game(object):
                 for (r,c,u) in rankings[1:]:
                     if highest_rank==r:
                         cards.append((c,u))
-            print(cards)
             cards.sort(key=lambda tup:tup[0])
             highest_card,username = cards[0]
             winners = [username]
@@ -623,7 +605,6 @@ class Game(object):
                     if highest_card==c:
                         winners.append(u)
             #those users are winner
-        print(winners)
         number = len(winners)
         winamount = self.bank//number
         for gamer in self.players:
@@ -645,7 +626,6 @@ class Game(object):
 
     #send message with a choice
     def giveChoice(self,player):
-        print("SENDING"+player.username)
         sendMessage(socket,player.username,"/move/"+str(self.bank))
 
     #if player is checking or calling
@@ -663,11 +643,8 @@ class Game(object):
             #check if he is the last person in the queve
             elif self.i != len(self.players):
                 #if not, then next person moves
-                print(self.players)
-                print(self.i)
                 self.giveChoice(self.players[self.i])
                 self.currentMover = self.players[self.i].username
-                print("I SENT" + str(self.players[self.i]))
             elif self.turn != 4:
                 #if it is the end of current turn show central cards
                 for gamer in self.players:
@@ -682,11 +659,8 @@ class Game(object):
                 #increment the turns' number and start moving the first player
                 self.turn += 1
                 self.i = 0
-                print(self.players)
-                print(self.i)
                 self.giveChoice(self.players[self.i])
                 self.currentMover = self.players[self.i].username
-                print("I SENT" + str(self.players[self.i]))
             else:
                 self.checkWinner()
         else:
@@ -733,7 +707,6 @@ class Game(object):
                     self.currentMover = self.players[self.i].username
                 else:
                     self.checkWinner()
-        print(self.bank)
 
     def bet(self,player,amount):
         #identify whether it is betting or raising
@@ -822,7 +795,6 @@ class Game(object):
             else:
                 sendMessage(socket,player.username,"/no/not_enough")
                 self.giveChoice(self.players[self.i])
-        print(self.bank)
 
 
 
@@ -885,7 +857,6 @@ class Game(object):
                 self.currentMover = self.players[self.i].username
             else:
                 self.checkWinner()
-        print(self.bank)
 
 
 class startWnd():
@@ -905,14 +876,12 @@ class startWnd():
 
 
 def userJoined(s,u,playerlist,players):
-    print(players,playerlist)
     if u in players:
         sendMessage(s,u,"/back/" + u + "/" + str(playerlist[u].chips))
     else:
         players.append(u)
         playerlist[u] = Player(u,50000)
         if sendMessage(s,u,"/welcome/" + u + "/"+ str(playerlist[u].chips)):
-            print("Sent message to " + u)
 
 #this returns client the list of tables
 def returnTables(tableList,u):
@@ -924,15 +893,12 @@ def returnTables(tableList,u):
 #this function should update every second and check for new requests from users
 def receiveCommands(s):
     (Messages, Files) = getMail(s)
-    print(Messages)
     #depending on the request from user, returns the result (SUCCESS/FAIL) or does a function
     if Messages != []:
         for (u, m) in Messages:
             if m != " ":
                 command = m.split("/")
-                print(command[0])
                 if command[0] == "":
-                    print(command[1])
                     if command[1] == "play":
                         userJoined(s,u,playerlist,players)
                     elif command[1] == "tables":
@@ -945,7 +911,6 @@ def receiveCommands(s):
                     elif command[1] == "join":
                         if u in players:
                             playerlist[u].joinTable(tables[int(command[2])],int(command[3]))
-                            print(tables[int(command[2])].users)
                         else:
                             sendMessage(s,u,"/no/register")
                         #user leave the table

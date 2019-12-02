@@ -288,35 +288,23 @@ class pokerWnd():
         #once it find the table info, it adds it to the listbox
         for j in range(int(messages[i].split("/")[2])):
             tables.append(messages[i].split("/")[2+(j*2)+1])
-        print(tables)
-        print("ARE TABLES")
         self.listbox1_entries += tables
-        print(self.listbox1_entries)
-        print("SHOULD BE ADDED")
         for table in self.listbox1_entries:
             self.listbox1_widget.insert(tkinter.END, table)
         #passes other messages
         if i < number:
             self.leftmsg = messages[i+1:]
-            print(messages[i+1:])
-            print("SENT TO NEXT")
 
     #implement changes depending on the server responses
     def getCommands(self):
         #takes leaving messages from tables
         messages = self.leftmsg
-        print(messages)
-        print("ARE FREAKING MESSSAGES")
         #checks each message
         for i in range(len(messages)):
             #if the respose is /ok/joinTable - success in joining table
             if messages[i].split("/")[1] == "ok":
                 #open the table window
-                print(messages[i])
-                print(messages[i].split("/")[2])
                 if messages[i].split("/")[2] == "joinTable":
-                    print("GOODBYE")
-                    print(messages[i+1:])
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
@@ -327,7 +315,6 @@ class pokerWnd():
 #sends a query for joining chosen table
     def joinTable(self,tableId):
         self.answer = simpledialog.askinteger("Input", "How many chips to use? Minimum 1000, Maximum 50000",parent=self.mainFrame, minvalue = 1000, maxvalue = 50000)
-        print(self.answer)
         sendMessage(self.socket,"dealer","/join/"+tableId+"/"+str(self.answer))
 
 #updates the window every 5-7 secs
@@ -354,7 +341,6 @@ class tableWnd():
         self.messages = messages
         self.chips  = mychips
         self.center = 0
-        print(self.messages)
         self.mainFrame = tkinter.Frame(self.root)
         self.mainFrame.grid()
         self.canvas = tkinter.Canvas(self.mainFrame,width = 600, height = 416)
@@ -407,8 +393,6 @@ class tableWnd():
         self.players = []
         players = []
         messages = self.messages + getMail(self.socket,message,number)
-        print("ALL MESSAGES ARE")
-        print(messages)
         i = 0
         while i <= len(messages) and messages[i].split("/")[1]!="players":
             messages.append(messages[i])
@@ -417,18 +401,13 @@ class tableWnd():
             if messages[i].split("/")[3+2*j] == self.mylogin:
                 self.chips = messages[i].split("/")[4+2*j]
             players.append(messages[i].split("/")[3+2*j])
-        print(players)
-        print(self.mylogin)
         self.players = players
         if len(self.players)<5:
             for j in range(5-len(self.players)):
                 self.players.append(None)
         players = self.players
-        print(players)
         while players[2]!=self.mylogin:
-            print("High")
             players = rotate(players,1)
-        print(players)
         self.players1 = players
         #1 username
         if players[0] != None:
@@ -462,22 +441,15 @@ class tableWnd():
             self.lbl5.destroy()
         if i < len(messages):
             self.messages = messages[i+1:]
-            print(messages[i+1:])
-            print("SENT TO NEXT")
-        print("RETURNING")
-        print(players)
         return players
 
     def update(self):
         sendMessage(self.socket,"dealer","/players")
         current_players = self.mainFrame.after(1500,self.getPlayers)
         messages = self.messages
-        print(messages)
-        print("CAME FROM PLAYERS")
         for m in messages:
             if "/" in m:
                 if m.split("/")[1] == "cards":
-                    print("GAAGAGA")
                     if m.split("/")[2] == "your":
                         card_6 =  m.split("/")[3]+m.split("/")[4]
                         card_7 =  m.split("/")[5]+m.split("/")[6]
@@ -490,12 +462,10 @@ class tableWnd():
                         self.cardimage = self.canvas.create_image(270, 240, anchor=tkinter.NW, image=self.card_6)
                         self.cardimage = self.canvas.create_image(310, 240, anchor=tkinter.NW, image=self.card_7)
                     elif m.split("/")[2] == "center":
-                        print(m+"ARECARDS")
                         if self.center == 0:
                             card_1 =  m.split("/")[3]+m.split("/")[4]
                             card_2 =  m.split("/")[5]+m.split("/")[6]
                             card_3 =  m.split("/")[7]+m.split("/")[8]
-                            print(card_1,card_2,card_3)
                             card1 = PIL.Image.open('images/PNG/'+card_1+'.gif')
                             card1 = card1.resize((35, 50), PIL.Image.ANTIALIAS)
                             card2 = PIL.Image.open('images/PNG/'+card_2+'.gif')
@@ -571,7 +541,6 @@ class tableWnd():
 
                 #if it is player's turn, buttons appear
                 elif m.split("/")[1] == "move":
-                    print(m)
                     self.btn1 = tkinter.Button(self.mainFrame, text = "Check/Call",command = self.check)
                     button1 = self.canvas.create_window(265, 300, anchor=tkinter.NW, window=self.btn1)
                     self.btn2 = tkinter.Button(self.mainFrame, text = "Fold",command = self.fold)
