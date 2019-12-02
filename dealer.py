@@ -270,10 +270,28 @@ class Table(object):
         print(currentPlayers)
         if count > 1 and self.inGame == False:
             self.inGame = True
-            self.game = Game(currentPlayers,RandomDeck())
+            self.game = Game(currentPlayers,RandomDeck(),self.id)
         elif count > 1 and self.inGame == True:
             sendMessage(socket,player.username,"/wait")
 
+    def removeUser(self,player):
+        i = 0
+        while self.users[i].username != player:
+            i+=1
+        self.users[i] = None
+
+    def launchGame(self):
+        count = 0
+        currentPlayers = []
+        for i in range(len(self.users)):
+            if self.users[i] != None:
+                user = self.users[i]
+                count+=1
+                currentPlayers.append(user)
+                sendMessage(socket,user.username,"/game")
+        print(currentPlayers)
+        self.inGame = True
+        self.game = Game(currentPlayers,RandomDeck(),self.id)
 
 #players' class
 class Player(object):
@@ -321,10 +339,9 @@ class Player(object):
     #remove user from the table
     def leaveTable(self):
         if self.table!=None:
-            table = self.table
-            for i in table.users:
+            for i in self.table.users:
                 if i == self.username:
-                    table.users[i] = None
+                    self.table.removeUser(self.username)
             sendMessage(socket,self.username,"/leave")
             self.table = None
         else:
@@ -361,9 +378,10 @@ def checkForSequence(a):
 
 #games' class
 class Game(object):
-    def __init__(self,players,cards):
+    def __init__(self,players,cards,table):
         #game is initialized with players,randomdeck
         deck = RandomDeck()
+        self.table_id = table
         self.bank = 0
         self.center = []
         self.turn = 1
@@ -438,7 +456,7 @@ class Game(object):
         uniqueCards.sort()
         #if the length of the new list is less than 5, return False
         if len(uniqueCards) < 5:
-            return False
+            return [False]
         street = []
         #checks for the sequences in each of the subsets if 5 values
         for i in range(len(uniqueCards)-4):
@@ -574,7 +592,7 @@ class Game(object):
                     player.rank = 3
                     player.highest = self.isPair(allCards)[1]
                 #One pair
-                elif self.isPair(allCards):
+                elif self.isPair(allCards)[0]:
                     player.rank = 2
                     player.highest = self.isPair(allCards)[1]
                 #highest card
@@ -614,6 +632,9 @@ class Game(object):
                 gamer.chips += winamount
                 sendMessage(socket,gamer.username,"/won/"+str(winamount))
             sendMessage(socket,gamer.username,"/end")
+        for table in tables:
+            if table.id == self.table_id:
+                table.launchGame()
 
 
 
@@ -804,9 +825,13 @@ class Game(object):
 
     def fold(self,player):
         for gamer in self.players:
-            sendMessage(socket,gamer.username,"/fold/"+str(player.username))
+            sendMessage(socket,gamer.username,"/fold/"+str(player))
         playerlist[player].cards = None
-        self.players.remove(player)
+        players = self.players
+        for i in range(len(self.players)):
+            if self.players[i].username == player:
+                del players[i]
+        self.players = players
         if self.isBetting == True:
             if len(self.betted)!=len(self.players):
                 if self.i==len(self.players):

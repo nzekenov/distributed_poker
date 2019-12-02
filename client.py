@@ -241,13 +241,6 @@ class loginWnd():
         self.app = pokerWnd(self.root,socket,clogin)
         self.root.mainloop()
 
-#CLASS Player
-class Player(object):
-    def __init__(self,username,currentChips):
-        self.username = username
-        self.currentChips = currentChips
-        self.cards = []
-        self.table = table
 
 class Card(object):
     def __init__(self,value,suit):
@@ -324,9 +317,9 @@ class pokerWnd():
 
 
     def joinTable(self,tableId):
-        self.answer = simpledialog.askstring("Input", "How many chips to use?",parent=self.mainFrame)
+        self.answer = simpledialog.askinteger("Input", "How many chips to use? Minimum 1000, Maximum 50000",parent=self.mainFrame, minvalue = 1000, maxvalue = 50000)
         print(self.answer)
-        sendMessage(self.socket,"dealer","/join/"+tableId+"/"+self.answer)
+        sendMessage(self.socket,"dealer","/join/"+tableId+"/"+str(self.answer))
 
     def alarm(self):
         sendMessage(self.socket,"dealer","/tables")
@@ -342,6 +335,7 @@ class tableWnd():
     def __init__(self,root,socket,mylogin,messages,mychips):
         self.players = []
         self.players1 = []
+        self.root = root
         self.wnd = wnd
         self.socket = socket
         self.mylogin = mylogin
@@ -349,14 +343,14 @@ class tableWnd():
         self.chips  = mychips
         self.center = 0
         print(self.messages)
-        self.mainFrame = tkinter.Frame(root)
+        self.mainFrame = tkinter.Frame(self.root)
         self.mainFrame.grid()
         self.canvas = tkinter.Canvas(self.mainFrame,width = 600, height = 416)
         self.canvas.grid()
         image = PIL.ImageTk.PhotoImage(PIL.Image.open("images/63.gif").resize((600, 416), PIL.Image.ANTIALIAS))
         self.canvas.background = image
         self.bg = self.canvas.create_image(0,0,anchor=tkinter.NW,image=image)
-        self.btn4 = tkinter.Button(self.canvas, text = "Leave Table", command = self.leave)
+        self.btn4 = tkinter.Button(self.mainFrame, text = "Leave Table", command = self.leave)
         button4 = self.canvas.create_window(450,20, anchor=tkinter.NW, window = self.btn4)
         self.lbl1 = tkinter.Label(self.mainFrame,text="None")
         playername= self.canvas.create_window(40, 50, anchor=tkinter.NW, window=self.lbl1)
@@ -399,6 +393,7 @@ class tableWnd():
         #5 cards
         #cardimage = self.canvas.create_image(440, 100, anchor=tkinter.NW, image=self.card_back1)
         #cardimage = self.canvas.create_image(470, 100, anchor=tkinter.NW, image=self.card_back1)
+
         self.mainFrame.after(500,self.update)
 
     def leave(self):
@@ -515,8 +510,8 @@ class tableWnd():
                         card7 = card7.resize((35, 50), PIL.Image.ANTIALIAS)
                         self.card_6 = PIL.ImageTk.PhotoImage(card6)
                         self.card_7 = PIL.ImageTk.PhotoImage(card7)
-                        cardimage = self.canvas.create_image(270, 240, anchor=tkinter.NW, image=self.card_6)
-                        cardimage = self.canvas.create_image(310, 240, anchor=tkinter.NW, image=self.card_7)
+                        self.cardimage = self.canvas.create_image(270, 240, anchor=tkinter.NW, image=self.card_6)
+                        self.cardimage = self.canvas.create_image(310, 240, anchor=tkinter.NW, image=self.card_7)
                     elif m.split("/")[2] == "center":
                         print(m+"ARECARDS")
                         if self.center == 0:
@@ -533,23 +528,23 @@ class tableWnd():
                             self.card_1 = PIL.ImageTk.PhotoImage(card1)
                             self.card_2 = PIL.ImageTk.PhotoImage(card2)
                             self.card_3 = PIL.ImageTk.PhotoImage(card3)
-                            cardimage = self.canvas.create_image(195, 160, anchor=tkinter.NW, image=self.card_1)
-                            cardimage = self.canvas.create_image(240, 160, anchor=tkinter.NW, image=self.card_2)
-                            cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card_3)
+                            self.cardimage = self.canvas.create_image(195, 160, anchor=tkinter.NW, image=self.card_1)
+                            self.cardimage = self.canvas.create_image(240, 160, anchor=tkinter.NW, image=self.card_2)
+                            self.cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card_3)
                             self.center += 1
                         elif self.center == 1:
                             card_4 =  m.split("/")[3]+m.split("/")[4]
                             card4 = PIL.Image.open('images/PNG/'+card_4+'.gif')
                             card4 = card4.resize((35, 50), PIL.Image.ANTIALIAS)
                             self.card_4 = PIL.ImageTk.PhotoImage(card4)
-                            cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card_4)
+                            self.cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card_4)
                             self.center += 1
                         else:
                             card_5 =  m.split("/")[3]+m.split("/")[4]
                             card5 = PIL.Image.open('images/PNG/'+card_5+'.gif')
                             card5 = card5.resize((35, 50), PIL.Image.ANTIALIAS)
                             self.card_5 = PIL.ImageTk.PhotoImage(card5)
-                            cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_5)
+                            self.cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_5)
                             self.center += 1
                 #if it is player's turn, buttons appear
                 elif m.split("/")[1] == "move":
@@ -562,14 +557,18 @@ class tableWnd():
                     button3 = self.canvas.create_window(180, 300, anchor=tkinter.NW, window=self.btn3)
                     self.w = tkinter.Scale(self.mainFrame,from_=100, to=self.chips,orient = HORIZONTAL)
                     scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
-                    self.lbl6.destroy()
-                    self.lbl6 = tkinter.Label(self.mainFrame, text = messages[i].split("/")[2])
-                    label = self.canvas.create_window(290,30, anchor=tkinter.NW, window=self.lbl6)
+                    #self.lbl6 = tkinter.Label(self.mainFrame, text = messages[i].split("/")[2])
+                    #label = self.canvas.create_window(290,30, anchor=tkinter.NW, window=self.lbl6)
 
                 elif m.split("/")[1] == "won":
                     messagebox.showinfo("Game End","You won "+ m.split("/")[2])
 
-                elif m.split("/")[1] == "leave" or m.split("/")[1] == "end":
+                elif m.split("/")[1] == "end":
+                    self.canvas.delete(self.cardimage)
+                    self.center = 0
+
+
+                elif m.split("/")[1] == "leave":
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
