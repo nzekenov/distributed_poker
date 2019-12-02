@@ -443,13 +443,18 @@ class tableWnd():
             self.messages = messages[i+1:]
         return players
 
+    #this function works with responses from the dealer
     def update(self):
+        #update users in table
         sendMessage(self.socket,"dealer","/players")
         current_players = self.mainFrame.after(1500,self.getPlayers)
+        #work with each response from dealer
         messages = self.messages
         for m in messages:
             if "/" in m:
+                #if dealer is sending cards
                 if m.split("/")[1] == "cards":
+                    #sort cards
                     if m.split("/")[2] == "your":
                         card_6 =  m.split("/")[3]+m.split("/")[4]
                         card_7 =  m.split("/")[5]+m.split("/")[6]
@@ -493,8 +498,11 @@ class tableWnd():
                             self.card_5 = PIL.ImageTk.PhotoImage(card5)
                             self.cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_5)
                             self.center += 1
+
                     """
+                    this part is supposed to show cards of other playing users at the end of game, but it is not even crashing, just loading hard and heating my laptop
                     else:
+
                         user = m.split("/")[2]
                         i = 0
                         while user != current_players[i]:
@@ -550,14 +558,14 @@ class tableWnd():
                     self.w = tkinter.Scale(self.mainFrame,from_=100, to=self.chips,orient = HORIZONTAL)
                     scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
 
-
+                #if he won, dialog menu appear
                 elif m.split("/")[1] == "won":
                     messagebox.showinfo("Game End","You won "+ m.split("/")[2])
-
+                #end of the game,all card images disappear
                 elif m.split("/")[1] == "end":
                     self.canvas.delete(self.cardimage)
                     self.center = 0
-
+                #start of the game, central cards are undefined
                 elif m.split("/")[1] == "game":
                     card = PIL.Image.open('images/PNG/red_back.gif')
                     card = card.resize((35, 50), PIL.Image.ANTIALIAS)
@@ -567,12 +575,14 @@ class tableWnd():
                     self.cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card)
                     self.cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card)
                     self.cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card)
+                #confirmation of table leaving (not working properly in dealer)
                 elif m.split("/")[1] == "leave":
                     self.root.destroy()
                     self.root = tkinter.Tk()
                     self.root.title("Table")
                     app = pokerWnd(self.root,self.socket,self.mylogin)
                     self.root.mainloop()
+                #error message
                 elif m.split("/")[1] == "no":
                     messagebox.showerror("Error", m.split("/")[2])
 
