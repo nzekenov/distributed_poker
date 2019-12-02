@@ -395,13 +395,14 @@ class tableWnd():
         players = []
         messages = self.messages + getMail(self.socket,message,number)
         i = 0
-        while i <= len(messages) and messages[i].split("/")[1]!="players":
-            messages.append(messages[i])
-            i+=1
-        for j in range(int(messages[i].split("/")[2])):
-            if messages[i].split("/")[3+2*j] == self.mylogin:
-                self.chips = messages[i].split("/")[4+2*j]
-            players.append(messages[i].split("/")[3+2*j])
+        if len(messages) > 0:
+            while i <= len(messages) and messages[i].split("/")[1]!="players":
+                messages.append(messages[i])
+                i+=1
+            for j in range(int(messages[i].split("/")[2])):
+                if messages[i].split("/")[3+2*j] == self.mylogin:
+                    self.chips = messages[i].split("/")[4+2*j]
+                players.append(messages[i].split("/")[3+2*j])
         self.players = players
         if len(self.players)<5:
             for j in range(5-len(self.players)):
