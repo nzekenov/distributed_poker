@@ -281,17 +281,18 @@ class pokerWnd():
         i = 0
         #get all messages from the network
         messages = getMail(self.socket,message,number)
-        while i <= number and messages[i].split("/")[1]!="tables":
-            messages.append(messages[i])
-            i+=1
-        #skips all messages,which are not regarding tables
-        #once it find the table info, it adds it to the listbox
-        for j in range(int(messages[i].split("/")[2])):
-            tables.append(messages[i].split("/")[2+(j*2)+1])
-        self.listbox1_entries += tables
-        for table in self.listbox1_entries:
-            self.listbox1_widget.insert(tkinter.END, table)
-        #passes other messages
+        if len(messages)>0:
+            while i <= number and messages[i].split("/")[1]!="tables":
+                messages.append(messages[i])
+                i+=1
+            #skips all messages,which are not regarding tables
+            #once it find the table info, it adds it to the listbox
+            for j in range(int(messages[i].split("/")[2])):
+                tables.append(messages[i].split("/")[2+(j*2)+1])
+            self.listbox1_entries += tables
+            for table in self.listbox1_entries:
+                self.listbox1_widget.insert(tkinter.END, table)
+            #passes other messages
         if i < number:
             self.leftmsg = messages[i+1:]
 

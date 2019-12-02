@@ -864,12 +864,13 @@ class startWnd():
         self.root = root
         self.mainFrame = tkinter.Frame(root)
         self.mainFrame.pack()
+        createTable()
         self.mainFrame.after(50,self.update)
 
     #This should automatically create tables by checking every second(OOP side) and get commands from players
     def update(self):
         receiveCommands(socket)
-        if len(players)-1 != len(tables) and len(players) != 0:
+        if len(players)-1 != len(tables) and len(players) > 1:
             createTable()
         self.mainFrame.after(50,self.update)
 
@@ -881,7 +882,7 @@ def userJoined(s,u,playerlist,players):
     else:
         players.append(u)
         playerlist[u] = Player(u,50000)
-        if sendMessage(s,u,"/welcome/" + u + "/"+ str(playerlist[u].chips)):
+        sendMessage(s,u,"/welcome/" + u + "/"+ str(playerlist[u].chips))
 
 #this returns client the list of tables
 def returnTables(tableList,u):
