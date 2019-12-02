@@ -266,19 +266,19 @@ class Table(object):
                 user = self.users[i]
                 count+=1
                 currentPlayers.append(user)
-                sendMessage(socket,user.username,"/game")
         print(currentPlayers)
         if count > 1 and self.inGame == False:
             self.inGame = True
             self.game = Game(currentPlayers,RandomDeck(),self.id)
         elif count > 1 and self.inGame == True:
-            sendMessage(socket,player.username,"/wait")
+            sendMessage(socket,player,"/wait")
 
     def removeUser(self,player):
         i = 0
         while self.users[i].username != player:
             i+=1
         self.users[i] = None
+
 
     def launchGame(self):
         count = 0
@@ -288,7 +288,6 @@ class Table(object):
                 user = self.users[i]
                 count+=1
                 currentPlayers.append(user)
-                sendMessage(socket,user.username,"/game")
         print(currentPlayers)
         self.inGame = True
         self.game = Game(currentPlayers,RandomDeck(),self.id)
@@ -395,7 +394,8 @@ class Game(object):
         print(players)
         #give each player 2 cards and send them in messages
         for player in players:
-            player.giveCard(2,cards)
+            player.cards = []
+            player.giveCard(2,deck)
             sendMessage(socket,player.username,"/game")
             player.gaveAmount = 0
             player.rank = 0
@@ -622,11 +622,14 @@ class Game(object):
                 for (c,u) in cards[1:]:
                     if highest_card==c:
                         winners.append(u)
-            #those users are winners
+            #those users are winner
         print(winners)
         number = len(winners)
         winamount = self.bank//number
         for gamer in self.players:
+            for person in self.players:
+                cardString = str(person.cards[0])+str(person.cards[1])
+                sendMessage(socket,gamer.username,"/cards/"+person.username+cardString)
             if gamer.username in winners:
                 gamer.currentChips += winamount
                 gamer.chips += winamount

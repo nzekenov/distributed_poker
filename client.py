@@ -271,17 +271,21 @@ class pokerWnd():
         self.getCommands()
         self.mainFrame.after(100,self.alarm)
 
+#adds/updates all existing tables to the listbox
     def getTables(self):
         number, message = checkMail(self.socket)
+        #cleaning of the current list
         self.listbox1_entries = []
         self.listbox1_widget.delete(0,'end')
         tables = []
         i = 0
+        #get all messages from the network
         messages = getMail(self.socket,message,number)
         while i <= number and messages[i].split("/")[1]!="tables":
             messages.append(messages[i])
             i+=1
-        print(messages[i]+" HAHAHAHAAHHA")
+        #skips all messages,which are not regarding tables
+        #once it find the table info, it adds it to the listbox
         for j in range(int(messages[i].split("/")[2])):
             tables.append(messages[i].split("/")[2+(j*2)+1])
         print(tables)
@@ -291,18 +295,23 @@ class pokerWnd():
         print("SHOULD BE ADDED")
         for table in self.listbox1_entries:
             self.listbox1_widget.insert(tkinter.END, table)
+        #passes other messages
         if i < number:
             self.leftmsg = messages[i+1:]
             print(messages[i+1:])
             print("SENT TO NEXT")
 
-    #method of getting all commands
+    #implement changes depending on the server responses
     def getCommands(self):
+        #takes leaving messages from tables
         messages = self.leftmsg
         print(messages)
         print("ARE FREAKING MESSSAGES")
+        #checks each message
         for i in range(len(messages)):
+            #if the respose is /ok/joinTable - success in joining table
             if messages[i].split("/")[1] == "ok":
+                #open the table window
                 print(messages[i])
                 print(messages[i].split("/")[2])
                 if messages[i].split("/")[2] == "joinTable":
@@ -315,12 +324,13 @@ class pokerWnd():
                     self.root.mainloop()
 
 
-
+#sends a query for joining chosen table
     def joinTable(self,tableId):
         self.answer = simpledialog.askinteger("Input", "How many chips to use? Minimum 1000, Maximum 50000",parent=self.mainFrame, minvalue = 1000, maxvalue = 50000)
         print(self.answer)
         sendMessage(self.socket,"dealer","/join/"+tableId+"/"+str(self.answer))
 
+#updates the window every 5-7 secs
     def alarm(self):
         sendMessage(self.socket,"dealer","/tables")
         self.mainFrame.after(2000,self.getTables)
@@ -328,9 +338,11 @@ class pokerWnd():
         self.leftmsg = []
         self.mainFrame.after(5000,self.alarm)
 
+#used for circular order of players
 def rotate(l,n):
     return l[n:] + l[:n]
 
+#window for table with background
 class tableWnd():
     def __init__(self,root,socket,mylogin,messages,mychips):
         self.players = []
@@ -350,8 +362,6 @@ class tableWnd():
         image = PIL.ImageTk.PhotoImage(PIL.Image.open("images/63.gif").resize((600, 416), PIL.Image.ANTIALIAS))
         self.canvas.background = image
         self.bg = self.canvas.create_image(0,0,anchor=tkinter.NW,image=image)
-        self.btn4 = tkinter.Button(self.mainFrame, text = "Leave Table", command = self.leave)
-        button4 = self.canvas.create_window(450,20, anchor=tkinter.NW, window = self.btn4)
         self.lbl1 = tkinter.Label(self.mainFrame,text="None")
         playername= self.canvas.create_window(40, 50, anchor=tkinter.NW, window=self.lbl1)
         self.lbl2 = tkinter.Label(self.mainFrame,text="None")
@@ -362,45 +372,13 @@ class tableWnd():
         playername = self.canvas.create_window(490, 280, anchor=tkinter.NW, window=self.lbl4)
         self.lbl5 = tkinter.Label(self.mainFrame,text="None")
         playername = self.canvas.create_window(500, 50, anchor=tkinter.NW, window=self.lbl5)
-        #self.btn1 = tkinter.Button(self.canvas, text = "Check/Call",command = self.check)
-        #button1 = self.canvas.create_window(265, 300, anchor=tkinter.NW, window=self.btn1)
-        #self.btn2 = tkinter.Button(self.mainFrame, text = "Fold",command = self.fold)
-        #button2 = self.canvas.create_window(360, 300, anchor=tkinter.NW, window=self.btn2)
-        #self.btn3 = tkinter.Button(self.mainFrame, text = "Bet/Raise",command = self.bet)
-        #button3 = self.canvas.create_window(180, 300, anchor=tkinter.NW, window=self.btn3)
-        #self.w = tkinter.Scale(self.mainFrame,from_=0, to=100,orient = HORIZONTAL)
-        #scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
-        #card_back = PIL.Image.open('images/PNG/red_back.gif')
-        #card_back = card_back.resize((35, 50), PIL.Image.ANTIALIAS)
-        #self.card_back = PIL.ImageTk.PhotoImage(card_back)
-        #central cards
-        #cardimage = self.canvas.create_image(195, 160, anchor=tkinter.NW, image=self.card_back)
-        #cardimage = self.canvas.create_image(240, 160, anchor=tkinter.NW, image=self.card_back)
-        #cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card_back)
-        #cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card_back)
-        #cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_back)
-        #card_back = card_back.resize((25, 40), PIL.Image.ANTIALIAS)
-        #self.card_back1 = PIL.ImageTk.PhotoImage(card_back)
-        #1 cards
-        #cardimage = self.canvas.create_image(100, 100, anchor=tkinter.NW, image=self.card_back1)
-        #cardimage = self.canvas.create_image(130, 100, anchor=tkinter.NW, image=self.card_back1)
-        #2 cards
-        #cardimage = self.canvas.create_image(100, 220, anchor=tkinter.NW, image=self.card_back1)
-        #cardimage = self.canvas.create_image(130, 220, anchor=tkinter.NW, image=self.card_back1)
-        #4 cards
-        #cardimage = self.canvas.create_image(440, 220, anchor=tkinter.NW, image=self.card_back1)
-        #cardimage = self.canvas.create_image(470, 220, anchor=tkinter.NW, image=self.card_back1)
-        #5 cards
-        #cardimage = self.canvas.create_image(440, 100, anchor=tkinter.NW, image=self.card_back1)
-        #cardimage = self.canvas.create_image(470, 100, anchor=tkinter.NW, image=self.card_back1)
-
         self.mainFrame.after(500,self.update)
 
     def leave(self):
         sendMessage(self.socket,"dealer","/leave")
 
 
-#once user moves, buttons disappear
+#once user moves and sends query to the server, buttons disappear
     def bet(self):
         sendMessage(self.socket,"dealer","/bet/"+str(self.w.get()))
         self.btn1.destroy()
@@ -423,6 +401,7 @@ class tableWnd():
         self.btn3.destroy()
         self.w.destroy()
 
+#this function updates the list of players in the table
     def getPlayers(self):
         number, message = checkMail(self.socket)
         self.players = []
@@ -481,8 +460,6 @@ class tableWnd():
             playername = self.canvas.create_window(500, 50, anchor=tkinter.NW, window=self.lbl5)
         else:
             self.lbl5.destroy()
-        self.lbl6 = tkinter.Label(self.mainFrame, text = "0")
-        playername = self.canvas.create_window(290, 50, anchor=tkinter.NW, window=self.lbl6)
         if i < len(messages):
             self.messages = messages[i+1:]
             print(messages[i+1:])
@@ -546,6 +523,52 @@ class tableWnd():
                             self.card_5 = PIL.ImageTk.PhotoImage(card5)
                             self.cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card_5)
                             self.center += 1
+                    """
+                    else:
+                        user = m.split("/")[2]
+                        i = 0
+                        while user != current_players[i]:
+                            i+=1
+                        if i == 0:
+                            card_n1 =  m.split("/")[3]+m.split("/")[4]
+                            card_n1 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n1 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(100, 100, anchor=tkinter.NW, image=self.card_n1)
+                            card_n2 =  m.split("/")[5]+m.split("/")[6]
+                            card_n2 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n2 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(130, 100, anchor=tkinter.NW, image=self.card_n2)
+
+                        elif i == 1:
+                            card_n1 =  m.split("/")[3]+m.split("/")[4]
+                            card_n1 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n1 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(100, 220, anchor=tkinter.NW, image=self.card_n1)
+                            card_n2 =  m.split("/")[5]+m.split("/")[6]
+                            card_n2 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n2 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(130, 220, anchor=tkinter.NW, image=self.card_n2)
+                        elif i == 3:
+                            card_n1 =  m.split("/")[3]+m.split("/")[4]
+                            card_n1 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n1 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(440, 220, anchor=tkinter.NW, image=self.card_n1)
+                            card_n2 =  m.split("/")[5]+m.split("/")[6]
+                            card_n2 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n2 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(470, 220, anchor=tkinter.NW, image=self.card_n2)
+                        elif i == 4:
+                            card_n1 =  m.split("/")[3]+m.split("/")[4]
+                            card_n1 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n1 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(440, 100, anchor=tkinter.NW, image=self.card_n1)
+                            card_n2 =  m.split("/")[5]+m.split("/")[6]
+                            card_n2 = PIL.Image.open('images/PNG/'+card_n1+'.gif')
+                            self.card_n2 = card_n.resize((25, 40), PIL.Image.ANTIALIAS)
+                            cardimage = self.canvas.create_image(470, 100, anchor=tkinter.NW, image=self.card_n2)
+                    """
+
+
                 #if it is player's turn, buttons appear
                 elif m.split("/")[1] == "move":
                     print(m)
@@ -557,8 +580,7 @@ class tableWnd():
                     button3 = self.canvas.create_window(180, 300, anchor=tkinter.NW, window=self.btn3)
                     self.w = tkinter.Scale(self.mainFrame,from_=100, to=self.chips,orient = HORIZONTAL)
                     scale = self.canvas.create_window(125,330, anchor = tkinter.NW,window=self.w)
-                    #self.lbl6 = tkinter.Label(self.mainFrame, text = messages[i].split("/")[2])
-                    #label = self.canvas.create_window(290,30, anchor=tkinter.NW, window=self.lbl6)
+
 
                 elif m.split("/")[1] == "won":
                     messagebox.showinfo("Game End","You won "+ m.split("/")[2])
@@ -567,7 +589,15 @@ class tableWnd():
                     self.canvas.delete(self.cardimage)
                     self.center = 0
 
-
+                elif m.split("/")[1] == "game":
+                    card = PIL.Image.open('images/PNG/red_back.gif')
+                    card = card.resize((35, 50), PIL.Image.ANTIALIAS)
+                    self.card = PIL.ImageTk.PhotoImage(card)
+                    self.cardimage = self.canvas.create_image(195, 160, anchor=tkinter.NW, image=self.card)
+                    self.cardimage = self.canvas.create_image(240, 160, anchor=tkinter.NW, image=self.card)
+                    self.cardimage = self.canvas.create_image(285, 160, anchor=tkinter.NW, image=self.card)
+                    self.cardimage = self.canvas.create_image(330, 160, anchor=tkinter.NW, image=self.card)
+                    self.cardimage = self.canvas.create_image(375, 160, anchor=tkinter.NW, image=self.card)
                 elif m.split("/")[1] == "leave":
                     self.root.destroy()
                     self.root = tkinter.Tk()
